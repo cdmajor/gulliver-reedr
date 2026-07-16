@@ -1,0 +1,27 @@
+kind = "web"
+previewPath = "/victor-web/"
+title = "Victor Website"
+version = "1.0.0"
+id = "artifacts/victor-web"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/victor-web/" ]
+localPort = 22363
+
+[services.development]
+run = "pnpm --filter @workspace/victor-web run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/victor-web", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/victor-web/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "22363"
+BASE_PATH = "/victor-web/"
