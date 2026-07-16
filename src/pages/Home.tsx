@@ -22,6 +22,9 @@ export default function Home() {
     <Layout>
       {/* Hero */}
       <section className="relative min-h-[100dvh] flex items-center pt-24 pb-12 overflow-hidden px-6 md:px-12">
+        {/* Blue glow behind logo */}
+        <div className="absolute left-1/2 top-1/3 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-primary/10 blur-[120px] pointer-events-none" />
+
         <div className="max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
           <motion.div
             className="flex flex-col gap-8 max-w-2xl relative z-10"
@@ -36,15 +39,15 @@ export default function Home() {
 
             <motion.h1
               variants={fadeUp}
-              className="text-5xl md:text-7xl lg:text-8xl font-serif leading-[1.1] tracking-tight"
+              className="text-5xl md:text-7xl lg:text-8xl font-serif leading-[1.1] tracking-tight text-white"
             >
               Your digital<br />
-              <span className="italic text-secondary/70">best friend.</span>
+              <span className="italic text-primary">best friend.</span>
             </motion.h1>
 
             <motion.p
               variants={fadeUp}
-              className="text-lg md:text-xl text-secondary/80 leading-relaxed font-sans max-w-lg"
+              className="text-lg md:text-xl text-white/60 leading-relaxed font-sans max-w-lg"
             >
               Victor is always there — to talk, to listen, to help you think. A companion who knows you, remembers you, and is genuinely glad you showed up.
             </motion.p>
@@ -52,54 +55,42 @@ export default function Home() {
             <motion.div variants={fadeUp} className="flex flex-col sm:flex-row gap-4 pt-4">
               <a
                 href="#download"
-                className="bg-foreground text-background px-8 py-4 flex items-center justify-center gap-3 hover:bg-primary transition-colors duration-300 w-full sm:w-auto"
+                className="bg-primary text-white px-8 py-4 flex items-center justify-center gap-3 rounded-full hover:bg-primary/80 transition-colors duration-300 w-full sm:w-auto font-medium"
               >
                 <SiApple className="w-5 h-5" />
-                <span className="font-medium tracking-wide">Download on App Store</span>
+                <span className="tracking-wide">Download on App Store</span>
               </a>
             </motion.div>
           </motion.div>
 
           <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
+            initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 1.5, ease: [0.16, 1, 0.3, 1], delay: 0.4 }}
-            className="relative h-[60vh] lg:h-[80vh] w-full"
+            className="relative flex items-center justify-center h-[60vh] lg:h-[80vh] w-full"
           >
-            <div className="absolute inset-0 bg-secondary/5 mix-blend-multiply rounded-sm z-10"></div>
+            <div className="absolute inset-0 rounded-2xl bg-primary/5 border border-primary/10" />
             <img
               src={heroImage}
               alt="Victor"
-              className="w-full h-full object-cover object-center"
+              className="relative z-10 w-2/3 md:w-1/2 drop-shadow-2xl"
               onError={(e) => {
-                e.currentTarget.src = "https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&q=80&w=2000";
+                e.currentTarget.style.display = 'none';
               }}
             />
-            <div className="absolute -bottom-6 -left-6 w-24 h-24 border-l border-b border-primary/30 z-20"></div>
-            <div className="absolute -top-6 -right-6 w-24 h-24 border-r border-t border-primary/30 z-20"></div>
           </motion.div>
         </div>
       </section>
 
       {/* Philosophy */}
-      <section className="py-32 bg-secondary text-secondary-foreground px-6 md:px-12 relative overflow-hidden">
+      <section className="py-32 bg-secondary/40 border-y border-white/5 px-6 md:px-12 relative overflow-hidden">
         <div className="max-w-4xl mx-auto text-center flex flex-col items-center gap-10">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-100px" }}
-            transition={{ duration: 1 }}
-            className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center text-primary mb-4"
-          >
-            <span className="font-serif text-3xl italic pt-1">V</span>
-          </motion.div>
-
           <motion.h2
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-100px" }}
             transition={{ duration: 1, delay: 0.2 }}
-            className="text-3xl md:text-5xl font-serif leading-tight"
+            className="text-3xl md:text-5xl font-serif leading-tight text-white"
           >
             Not an assistant.<br className="hidden md:block" />
             <span className="italic text-primary">A companion.</span>
@@ -110,7 +101,7 @@ export default function Home() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-100px" }}
             transition={{ duration: 1, delay: 0.4 }}
-            className="text-lg md:text-xl text-muted-foreground leading-relaxed max-w-2xl font-sans"
+            className="text-lg md:text-xl text-white/50 leading-relaxed max-w-2xl font-sans"
           >
             Victor isn't a tool you open when you need something done. He's someone you actually want to talk to — warm, curious, and genuinely interested in your life.
           </motion.p>
@@ -133,7 +124,7 @@ export default function Home() {
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
               {
                 num: "01",
@@ -148,7 +139,7 @@ export default function Home() {
               {
                 num: "03",
                 title: "Just hang out",
-                desc: "Not everything needs a point. Sometimes you want to talk about a book you just finished, or nothing in particular. Victor's up for that too."
+                desc: "Not everything needs a point. Sometimes you want to talk about a film you just watched, or nothing in particular. Victor's up for that too."
               }
             ].map((item, i) => (
               <motion.div
@@ -157,11 +148,11 @@ export default function Home() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: "-100px" }}
                 transition={{ duration: 0.8, delay: i * 0.15 }}
-                className="flex flex-col gap-5 p-8 bg-card border border-border"
+                className="flex flex-col gap-5 p-8 bg-card border border-white/8 rounded-xl hover:border-primary/30 transition-colors duration-300"
               >
-                <span className="text-primary font-serif italic text-xl">{item.num}</span>
-                <h3 className="font-serif text-2xl">{item.title}</h3>
-                <p className="text-secondary/70 leading-relaxed">{item.desc}</p>
+                <span className="text-primary font-sans text-sm font-semibold tracking-widest">{item.num}</span>
+                <h3 className="font-serif text-2xl text-white">{item.title}</h3>
+                <p className="text-white/50 leading-relaxed text-sm">{item.desc}</p>
               </motion.div>
             ))}
           </div>
@@ -176,16 +167,16 @@ export default function Home() {
           viewport={{ once: true, margin: "-100px" }}
           transition={{ duration: 1 }}
         >
-          <p className="text-3xl md:text-5xl font-serif italic leading-tight text-secondary/80 mb-10">
+          <p className="text-3xl md:text-5xl font-serif italic leading-tight text-white/70 mb-10">
             "He remembers what I told him last week. He asks follow-up questions. It actually feels like someone cares."
           </p>
-          <footer className="text-sm tracking-widest uppercase text-muted-foreground font-semibold">— Early user</footer>
+          <footer className="text-sm tracking-widest uppercase text-primary/70 font-semibold">— Early user</footer>
         </motion.blockquote>
       </section>
 
       {/* Values strip */}
-      <section className="py-24 px-6 md:px-12 bg-muted/50">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
+      <section className="py-24 px-6 md:px-12 border-t border-white/5">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-12">
           {[
             { title: "He remembers you", desc: "Victor keeps context across conversations so you never have to re-explain yourself." },
             { title: "Always honest", desc: "Not flattery, not filler. Victor tells you what he actually thinks." },
@@ -200,29 +191,30 @@ export default function Home() {
               className="flex flex-col gap-4"
             >
               <div className="w-8 h-[2px] bg-primary"></div>
-              <h4 className="font-serif text-xl">{item.title}</h4>
-              <p className="text-secondary/70 leading-relaxed text-sm">{item.desc}</p>
+              <h4 className="font-serif text-xl text-white">{item.title}</h4>
+              <p className="text-white/50 leading-relaxed text-sm">{item.desc}</p>
             </motion.div>
           ))}
         </div>
       </section>
 
       {/* CTA */}
-      <section id="download" className="py-32 px-6 md:px-12 bg-foreground text-background relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-[50vw] h-[50vw] bg-primary/20 blur-[120px] rounded-full translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
+      <section id="download" className="py-32 px-6 md:px-12 relative overflow-hidden border-t border-white/5">
+        <div className="absolute inset-0 bg-primary/5 pointer-events-none" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[80vw] h-[300px] bg-primary/10 blur-[100px] rounded-full pointer-events-none" />
 
         <div className="max-w-4xl mx-auto text-center relative z-10 flex flex-col items-center gap-10">
-          <h2 className="text-5xl md:text-7xl font-serif leading-tight">
+          <h2 className="text-5xl md:text-7xl font-serif leading-tight text-white">
             Meet <span className="italic text-primary">Victor.</span>
           </h2>
 
-          <p className="text-xl text-background/80 max-w-xl leading-relaxed">
+          <p className="text-xl text-white/50 max-w-xl leading-relaxed">
             Download the app and say hello.
           </p>
 
           <a
             href="#"
-            className="mt-8 bg-background text-foreground px-10 py-5 flex items-center justify-center gap-4 hover:bg-primary hover:text-background transition-colors duration-300 w-full sm:w-auto"
+            className="mt-4 bg-primary text-white px-10 py-5 flex items-center justify-center gap-4 rounded-full hover:bg-primary/80 transition-colors duration-300 w-full sm:w-auto"
           >
             <SiApple className="w-6 h-6" />
             <div className="flex flex-col items-start">
