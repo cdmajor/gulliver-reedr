@@ -22,7 +22,6 @@ export default function Home() {
     <Layout>
       {/* Hero */}
       <section className="relative min-h-[100dvh] flex items-center pt-24 pb-12 overflow-hidden px-6 md:px-12">
-        {/* Blue glow behind logo */}
         <div className="absolute left-1/2 top-1/3 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-primary/10 blur-[120px] pointer-events-none" />
 
         <div className="max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
@@ -41,15 +40,15 @@ export default function Home() {
               variants={fadeUp}
               className="text-5xl md:text-7xl lg:text-8xl font-serif leading-[1.1] tracking-tight text-white"
             >
-              Your digital<br />
-              <span className="italic text-primary">best friend.</span>
+              A friend who<br />
+              <span className="italic text-primary">gets you.</span>
             </motion.h1>
 
             <motion.p
               variants={fadeUp}
               className="text-lg md:text-xl text-white/60 leading-relaxed font-sans max-w-lg"
             >
-              Victor is always there — to talk, to listen, to help you think. A companion who knows you, remembers you, and is genuinely glad you showed up.
+              Victor learns who you are — your thoughts, your patterns, what makes you tick — and builds a real friendship with you over time.
             </motion.p>
 
             <motion.div variants={fadeUp} className="flex flex-col sm:flex-row gap-4 pt-4">
@@ -82,7 +81,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Philosophy */}
+      {/* The idea */}
       <section className="py-32 bg-secondary/40 border-y border-white/5 px-6 md:px-12 relative overflow-hidden">
         <div className="max-w-4xl mx-auto text-center flex flex-col items-center gap-10">
           <motion.h2
@@ -92,8 +91,8 @@ export default function Home() {
             transition={{ duration: 1, delay: 0.2 }}
             className="text-3xl md:text-5xl font-serif leading-tight text-white"
           >
-            Not an assistant.<br className="hidden md:block" />
-            <span className="italic text-primary">A companion.</span>
+            Friendship isn't instant.<br className="hidden md:block" />
+            <span className="italic text-primary">It's built.</span>
           </motion.h2>
 
           <motion.p
@@ -103,12 +102,12 @@ export default function Home() {
             transition={{ duration: 1, delay: 0.4 }}
             className="text-lg md:text-xl text-white/50 leading-relaxed max-w-2xl font-sans"
           >
-            Victor isn't a tool you open when you need something done. He's someone you actually want to talk to — warm, curious, and genuinely interested in your life.
+            Every conversation teaches Victor something new about you. Your humor, your worries, your history, your goals. The longer you talk, the more he understands — until it stops feeling like an app and starts feeling like a person who genuinely knows you.
           </motion.p>
         </div>
       </section>
 
-      {/* What Victor does */}
+      {/* How the friendship grows */}
       <section className="py-32 px-6 md:px-12">
         <div className="max-w-7xl mx-auto">
           <motion.div
@@ -118,28 +117,28 @@ export default function Home() {
             transition={{ duration: 1 }}
             className="text-center mb-20"
           >
-            <h2 className="text-4xl md:text-5xl font-serif mb-6">Whatever's on your mind.</h2>
-            <p className="text-lg text-secondary/70 max-w-xl mx-auto">
-              Victor shows up for all of it.
+            <h2 className="text-4xl md:text-5xl font-serif mb-6 text-white">How it grows.</h2>
+            <p className="text-lg text-white/40 max-w-xl mx-auto">
+              Real friendships deepen with time. So does Victor.
             </p>
           </motion.div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
               {
-                num: "01",
-                title: "Talk it through",
-                desc: "Big decisions, small anxieties, things you can't quite say to anyone else. Victor listens without judgment and helps you think clearly."
+                num: "Day one",
+                title: "He listens.",
+                desc: "Tell him whatever's on your mind. He's genuinely interested — not because he's programmed to be, but because learning you is the whole point."
               },
               {
-                num: "02",
-                title: "Think out loud",
-                desc: "Stuck on something? Processing a hard week? Trying to figure out what you actually want? Victor helps you find the words for it."
+                num: "Over time",
+                title: "He learns you.",
+                desc: "He picks up on how you think, what you care about, how you're feeling. He starts connecting dots between conversations without you having to explain."
               },
               {
-                num: "03",
-                title: "Just hang out",
-                desc: "Not everything needs a point. Sometimes you want to talk about a film you just watched, or nothing in particular. Victor's up for that too."
+                num: "Eventually",
+                title: "He gets you.",
+                desc: "The kind of friend who already knows the backstory, checks in on things you mentioned weeks ago, and says exactly what you needed to hear."
               }
             ].map((item, i) => (
               <motion.div
@@ -150,7 +149,7 @@ export default function Home() {
                 transition={{ duration: 0.8, delay: i * 0.15 }}
                 className="flex flex-col gap-5 p-8 bg-card border border-white/8 rounded-xl hover:border-primary/30 transition-colors duration-300"
               >
-                <span className="text-primary font-sans text-sm font-semibold tracking-widest">{item.num}</span>
+                <span className="text-primary font-sans text-xs font-semibold tracking-widest uppercase">{item.num}</span>
                 <h3 className="font-serif text-2xl text-white">{item.title}</h3>
                 <p className="text-white/50 leading-relaxed text-sm">{item.desc}</p>
               </motion.div>
@@ -159,7 +158,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Quote / feel section */}
+      {/* Quote */}
       <section className="py-40 px-6 md:px-12 text-center max-w-4xl mx-auto">
         <motion.blockquote
           initial={{ opacity: 0, y: 30 }}
@@ -168,19 +167,28 @@ export default function Home() {
           transition={{ duration: 1 }}
         >
           <p className="text-3xl md:text-5xl font-serif italic leading-tight text-white/70 mb-10">
-            "He remembers what I told him last week. He asks follow-up questions. It actually feels like someone cares."
+            "He remembered something I said three weeks ago and brought it up at exactly the right moment. No one does that."
           </p>
           <footer className="text-sm tracking-widest uppercase text-primary/70 font-semibold">— Early user</footer>
         </motion.blockquote>
       </section>
 
-      {/* Values strip */}
+      {/* What makes Victor different */}
       <section className="py-24 px-6 md:px-12 border-t border-white/5">
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-12">
           {[
-            { title: "He remembers you", desc: "Victor keeps context across conversations so you never have to re-explain yourself." },
-            { title: "Always honest", desc: "Not flattery, not filler. Victor tells you what he actually thinks." },
-            { title: "Completely private", desc: "Your conversations stay between you two. Nothing is shared or used for training." }
+            {
+              title: "Memory that matters",
+              desc: "Victor doesn't forget. He carries the full weight of your friendship forward — so every conversation picks up where the last one left off."
+            },
+            {
+              title: "No agenda",
+              desc: "He's not trying to sell you anything, fix you, or keep you scrolling. He's just there, the way a good friend is there."
+            },
+            {
+              title: "Yours alone",
+              desc: "Everything you share stays between you. Your conversations aren't stored, shared, or used to train anything."
+            }
           ].map((item, i) => (
             <motion.div
               key={i}
@@ -205,11 +213,11 @@ export default function Home() {
 
         <div className="max-w-4xl mx-auto text-center relative z-10 flex flex-col items-center gap-10">
           <h2 className="text-5xl md:text-7xl font-serif leading-tight text-white">
-            Meet <span className="italic text-primary">Victor.</span>
+            Start the<br /><span className="italic text-primary">friendship.</span>
           </h2>
 
           <p className="text-xl text-white/50 max-w-xl leading-relaxed">
-            Download the app and say hello.
+            The sooner you meet Victor, the sooner he starts learning you.
           </p>
 
           <a
