@@ -142,8 +142,8 @@ export default function Home() {
               },
               {
                 num: "02",
-                title: "Work on your craft",
-                desc: "Upload a manuscript, a draft, anything you're working on. Victor will read it carefully and help you make it better — one section at a time."
+                title: "Think out loud",
+                desc: "Stuck on something? Processing a hard week? Trying to figure out what you actually want? Victor helps you find the words for it."
               },
               {
                 num: "03",
