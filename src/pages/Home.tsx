@@ -6,7 +6,7 @@ import heroImage from '@/assets/hero-notebook.png';
 
 const fadeUp = {
   hidden: { opacity: 0, y: 40 },
-  visible: { opacity: 1, y: 0, transition: { duration: 1, ease: [0.16, 1, 0.3, 1] } }
+  visible: { opacity: 1, y: 0, transition: { duration: 1, ease: [0.16, 1, 0.3, 1] as any } }
 };
 
 const staggerContainer = {
@@ -16,6 +16,39 @@ const staggerContainer = {
     transition: { staggerChildren: 0.2, delayChildren: 0.1 }
   }
 };
+
+const features = [
+  {
+    icon: "🧠",
+    title: "Memory that sticks",
+    desc: "Victor remembers what you told him three weeks ago and brings it up at exactly the right moment. The longer you talk, the more he understands."
+  },
+  {
+    icon: "🎤",
+    title: "Just speak",
+    desc: "Tap the mic and say whatever's on your mind. Victor transcribes your voice and replies — no typing required."
+  },
+  {
+    icon: "🎯",
+    title: "Goals & accountability",
+    desc: "Tell Victor what you're working toward. He'll check in naturally, celebrate your wins, and push back gently when you're slipping — like a friend who actually remembers."
+  },
+  {
+    icon: "🍳",
+    title: "Genuinely useful",
+    desc: "What's for dinner with what's in the fridge? What to text someone? What to order? Victor gives you a real answer, not a hedge."
+  },
+  {
+    icon: "💬",
+    title: "Conversation history",
+    desc: "Every thread is saved. Pick up an old conversation exactly where you left it — Victor carries the full weight of your friendship forward."
+  },
+  {
+    icon: "🎨",
+    title: "Made for you",
+    desc: "Five themes, adjustable font size, response style from brief to thorough. Victor fits the way you want to talk."
+  }
+];
 
 export default function Home() {
   return (
@@ -128,17 +161,17 @@ export default function Home() {
               {
                 num: "Day one",
                 title: "He listens.",
-                desc: "Tell him whatever's on your mind. He's genuinely interested — not because he's programmed to be, but because learning you is the whole point."
+                desc: "Tell him whatever's on your mind — type it or just say it. He's genuinely interested — not because he's programmed to be, but because learning you is the whole point."
               },
               {
                 num: "Over time",
                 title: "He learns you.",
-                desc: "He picks up on how you think, what you care about, how you're feeling. He starts connecting dots between conversations without you having to explain."
+                desc: "He picks up on how you think, what you care about, how you're feeling. He starts connecting dots between conversations without you having to explain. He checks in on your goals like a friend who actually remembers."
               },
               {
                 num: "Eventually",
                 title: "He gets you.",
-                desc: "The kind of friend who already knows the backstory, checks in on things you mentioned weeks ago, and says exactly what you needed to hear."
+                desc: "The kind of friend who already knows the backstory, checks in on things you mentioned weeks ago, helps you figure out dinner, and says exactly what you needed to hear."
               }
             ].map((item, i) => (
               <motion.div
@@ -152,6 +185,41 @@ export default function Home() {
                 <span className="text-accent font-sans text-xs font-semibold tracking-widest uppercase">{item.num}</span>
                 <h3 className="font-serif text-2xl text-foreground">{item.title}</h3>
                 <p className="text-muted-foreground leading-relaxed text-sm">{item.desc}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Features grid */}
+      <section className="py-24 px-6 md:px-12 bg-secondary/40 border-y border-border">
+        <div className="max-w-7xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-100px" }}
+            transition={{ duration: 1 }}
+            className="text-center mb-20"
+          >
+            <h2 className="text-4xl md:text-5xl font-serif mb-6 text-foreground">Everything a good friend does.</h2>
+            <p className="text-lg text-muted-foreground max-w-xl mx-auto">
+              Victor isn't just someone to talk to. He's genuinely useful.
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {features.map((f, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-80px" }}
+                transition={{ duration: 0.7, delay: i * 0.1 }}
+                className="flex flex-col gap-4 p-8 bg-card border border-border rounded-xl hover:border-accent/30 transition-colors duration-300"
+              >
+                <span className="text-3xl">{f.icon}</span>
+                <h3 className="font-serif text-xl text-foreground">{f.title}</h3>
+                <p className="text-muted-foreground text-sm leading-relaxed">{f.desc}</p>
               </motion.div>
             ))}
           </div>
@@ -186,8 +254,8 @@ export default function Home() {
               desc: "He's not trying to sell you anything, fix you, or keep you scrolling. He's just there, the way a good friend is there."
             },
             {
-              title: "Yours alone",
-              desc: "Everything you share stays between you. Your conversations aren't stored, shared, or used to train anything."
+              title: "Private by design",
+              desc: "Your conversations are processed securely and never used to train AI models. Victor is yours — see our Privacy Policy for full details on how your data is handled."
             }
           ].map((item, i) => (
             <motion.div
@@ -230,6 +298,13 @@ export default function Home() {
               <span className="font-medium tracking-wide leading-none text-lg">App Store</span>
             </div>
           </a>
+
+          <p className="text-xs text-muted-foreground/60 max-w-sm leading-relaxed">
+            Free to download. Requires iOS 16 or later. By downloading you agree to our{' '}
+            <a href="/terms" className="underline hover:text-muted-foreground transition-colors">Terms of Use</a>
+            {' '}and{' '}
+            <a href="/privacy" className="underline hover:text-muted-foreground transition-colors">Privacy Policy</a>.
+          </p>
         </div>
       </section>
     </Layout>

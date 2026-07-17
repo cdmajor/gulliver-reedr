@@ -53,6 +53,7 @@ export const Layout: FC<LayoutProps> = ({ children }) => {
               <span className="text-muted-foreground/60 uppercase tracking-widest text-xs font-semibold">Legal & Help</span>
               <Link href="/support" className="text-muted-foreground hover:text-foreground transition-colors">Support</Link>
               <Link href="/privacy" className="text-muted-foreground hover:text-foreground transition-colors">Privacy Policy</Link>
+              <Link href="/terms" className="text-muted-foreground hover:text-foreground transition-colors">Terms of Use</Link>
             </div>
           </div>
         </div>
