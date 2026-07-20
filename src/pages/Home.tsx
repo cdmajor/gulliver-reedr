@@ -47,6 +47,11 @@ const features = [
     icon: "🎨",
     title: "Made for you",
     desc: "Five themes, adjustable font size, response style from brief to thorough. Victor fits the way you want to talk."
+  },
+  {
+    icon: "🛟",
+    title: "Built-in support",
+    desc: "Have a question about Victor? The in-app Support tab connects you to an AI assistant that knows every feature, setting, and troubleshooting step — no digging through docs."
   }
 ];
 
