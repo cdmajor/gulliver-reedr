@@ -31,10 +31,29 @@ export default function Support() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const messagesRef = useRef<Message[]>([WELCOME]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, loading]);
+
+  useEffect(() => { messagesRef.current = messages; }, [messages]);
+
+  useEffect(() => {
+    function sendTranscript() {
+      const msgs = messagesRef.current;
+      if (msgs.filter(m => m.role === 'user').length === 0) return;
+      navigator.sendBeacon(
+        `${BASE}/api/techsupport/transcript`,
+        new Blob([JSON.stringify({ appId: APP_ID, messages: msgs })], { type: 'application/json' }),
+      );
+    }
+    window.addEventListener('beforeunload', sendTranscript);
+    return () => {
+      window.removeEventListener('beforeunload', sendTranscript);
+      sendTranscript();
+    };
+  }, []);
 
   async function send() {
     const text = input.trim();
