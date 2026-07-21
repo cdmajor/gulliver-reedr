@@ -1,8 +1,31 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Layout } from '@/components/Layout';
 import { SiApple } from 'react-icons/si';
 
 import heroImage from '@/assets/hero-notebook.png';
+
+function ApiUrlDisplay() {
+  const [copied, setCopied] = useState(false);
+  const apiUrl = window.location.origin + '/api';
+  const copy = () => {
+    navigator.clipboard.writeText(apiUrl).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+  return (
+    <div className="flex items-center gap-2">
+      <code className="flex-1 text-[#a78bfa] text-sm font-mono truncate">{apiUrl}</code>
+      <button
+        onClick={copy}
+        className="text-xs text-[#6060a0] hover:text-[#a78bfa] transition-colors px-2 py-1 rounded border border-[#2a2a4a] hover:border-[#6d5ffa] flex-shrink-0"
+      >
+        {copied ? '✓ Copied' : 'Copy'}
+      </button>
+    </div>
+  );
+}
 
 const fadeUp = {
   hidden: { opacity: 0, y: 40 },
@@ -276,6 +299,114 @@ export default function Home() {
               <p className="text-muted-foreground leading-relaxed text-sm">{item.desc}</p>
             </motion.div>
           ))}
+        </div>
+      </section>
+
+      {/* Browser Extension */}
+      <section className="py-24 px-6 md:px-12 border-t border-border bg-secondary/40">
+        <div className="max-w-5xl mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-100px" }}
+              transition={{ duration: 0.9 }}
+              className="flex flex-col gap-6"
+            >
+              <div className="flex items-center gap-3">
+                <span className="w-8 h-[1px] bg-accent"></span>
+                <span className="text-accent tracking-widest uppercase text-xs font-semibold">Browser Extension</span>
+              </div>
+              <h2 className="text-4xl md:text-5xl font-serif leading-tight text-foreground">
+                Victor rides along<br />
+                <span className="italic text-accent">everywhere you go.</span>
+              </h2>
+              <p className="text-lg text-muted-foreground leading-relaxed">
+                Install the Chrome extension and Victor appears as a floating chat bubble on every webpage you visit. He reads the page, then talks you through it — whether it's a news story, a product you're considering, or something you just want to understand better.
+              </p>
+              <ul className="flex flex-col gap-3 text-sm text-muted-foreground">
+                {[
+                  "Appears on every site, automatically",
+                  "Reads the page before you say a word",
+                  "Ask anything — he's already context-aware",
+                  "Follows you as you navigate"
+                ].map((item, i) => (
+                  <li key={i} className="flex items-center gap-3">
+                    <span className="w-5 h-5 rounded-full bg-accent/20 border border-accent/40 flex items-center justify-center flex-shrink-0">
+                      <span className="w-1.5 h-1.5 rounded-full bg-accent block"></span>
+                    </span>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+              <div className="flex flex-col gap-3 pt-2">
+                <a
+                  href="/victor-web/victor-extension.zip"
+                  download="victor-extension.zip"
+                  className="inline-flex items-center justify-center gap-3 bg-primary text-primary-foreground px-8 py-4 rounded-full hover:bg-primary/80 transition-colors duration-300 font-medium w-full sm:w-auto text-center"
+                >
+                  <span>⬇</span>
+                  <span>Download Chrome Extension</span>
+                </a>
+                <p className="text-xs text-muted-foreground/60 leading-relaxed">
+                  After downloading, unzip the file and load it in Chrome via{' '}
+                  <span className="font-mono text-muted-foreground">chrome://extensions</span> → Developer mode → Load unpacked.
+                  Then open the extension settings and paste your API URL below.
+                </p>
+              </div>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true, margin: "-100px" }}
+              transition={{ duration: 1, delay: 0.2 }}
+              className="flex flex-col gap-4"
+            >
+              {/* Mock chat bubble preview */}
+              <div className="bg-[#0d0d22] border border-[#2a2a4a] rounded-2xl overflow-hidden shadow-2xl">
+                <div className="flex items-center gap-3 px-4 py-3 bg-[#13132b] border-b border-[#2a2a4a]">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#6d5ffa] to-[#a78bfa] flex items-center justify-center text-white text-sm font-bold">V</div>
+                  <div>
+                    <div className="text-white text-sm font-semibold">Victor</div>
+                    <div className="text-[#6060a0] text-xs">theverge.com</div>
+                  </div>
+                </div>
+                <div className="p-4 flex flex-col gap-3">
+                  <div className="flex gap-2">
+                    <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[#6d5ffa] to-[#a78bfa] flex items-center justify-center text-white text-xs font-bold flex-shrink-0 mt-0.5">V</div>
+                    <div className="bg-[#1a1a38] text-[#e0e0f8] text-sm rounded-2xl rounded-tl px-3 py-2.5 max-w-[85%] leading-relaxed">
+                      This article is arguing that AI companions will reshape how people process news — not just consume it. The author's most interesting point is buried in paragraph four. Want me to pull it out?
+                    </div>
+                  </div>
+                  <div className="flex gap-2 justify-end">
+                    <div className="bg-[#6d5ffa] text-white text-sm rounded-2xl rounded-tr px-3 py-2.5 max-w-[75%] leading-relaxed">
+                      Yes, and what's the counterargument?
+                    </div>
+                    <div className="w-6 h-6 rounded-full bg-[#2a2a4a] flex items-center justify-center text-[#a0a0c0] text-xs flex-shrink-0 mt-0.5">U</div>
+                  </div>
+                  <div className="flex gap-2">
+                    <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[#6d5ffa] to-[#a78bfa] flex items-center justify-center text-white text-xs font-bold flex-shrink-0 mt-0.5">V</div>
+                    <div className="bg-[#1a1a38] text-[#e0e0f8] text-sm rounded-2xl rounded-tl px-3 py-2.5 max-w-[85%] leading-relaxed">
+                      The counterargument — which the piece doesn't fully address — is that personalized AI filters could deepen news bubbles rather than break them…
+                    </div>
+                  </div>
+                </div>
+                <div className="px-4 pb-4 flex gap-2">
+                  <div className="flex-1 bg-[#09091a] border border-[#2a2a4a] rounded-xl px-3 py-2 text-[#404060] text-sm">Ask Victor anything about this page…</div>
+                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#6d5ffa] to-[#a78bfa] flex items-center justify-center">
+                    <span className="text-white text-xs">→</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* API URL helper */}
+              <div className="bg-[#13132b] border border-[#2a2a4a] rounded-xl p-4">
+                <p className="text-xs text-[#6060a0] font-mono uppercase tracking-widest mb-2">Your API URL</p>
+                <ApiUrlDisplay />
+              </div>
+            </motion.div>
+          </div>
         </div>
       </section>
 
