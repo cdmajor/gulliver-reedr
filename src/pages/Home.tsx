@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { Layout } from '@/components/Layout';
 import { SiApple } from 'react-icons/si';
+import { InstallGuide } from '@/components/InstallGuide';
 
 import heroImage from '@/assets/hero-notebook.png';
 
@@ -320,25 +321,8 @@ export default function Home() {
                 <span className="text-sm opacity-60 font-normal">— free</span>
               </a>
 
-              {/* 3 steps — no API URL, no settings */}
-              <div className="flex flex-col gap-4">
-                <p className="text-xs text-muted-foreground/50 uppercase tracking-widest font-semibold">Install in 3 steps</p>
-                {[
-                  { n: "1", title: "Download & unzip", desc: "Click the button above. Unzip the downloaded file." },
-                  { n: "2", title: "Load in Chrome", desc: <>Open <span className="font-mono text-foreground/70">chrome://extensions</span>, turn on Developer mode, click "Load unpacked", and select the unzipped folder.</> },
-                  { n: "3", title: "Start talking", desc: "Victor appears on every page automatically — no sign-in, no setup." },
-                ].map((step) => (
-                  <div key={step.n} className="flex gap-4 items-start">
-                    <span className="w-7 h-7 rounded-full bg-accent/20 border border-accent/30 flex items-center justify-center text-accent text-xs font-bold flex-shrink-0 mt-0.5">
-                      {step.n}
-                    </span>
-                    <div>
-                      <p className="text-sm font-semibold text-foreground">{step.title}</p>
-                      <p className="text-sm text-muted-foreground leading-relaxed">{step.desc}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              {/* Step-by-step visual install guide */}
+              <InstallGuide />
             </motion.div>
 
             {/* Right: mock chat preview */}
