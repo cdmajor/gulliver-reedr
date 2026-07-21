@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Layout } from '@/components/Layout';
 import { InstallModal, detectBrowser } from '@/components/InstallGuide';
 import DemoVideo from '@/pages/DemoVideo';
-import heroImage from '@/assets/hero-notebook.png';
+import heroImage from '@/assets/hero-browser.jpg';
 
 type Browser = 'chrome' | 'edge' | 'firefox';
 
@@ -108,8 +108,8 @@ export default function Home() {
               variants={fadeUp}
               className="text-5xl md:text-7xl lg:text-8xl font-serif leading-[1.1] tracking-tight text-foreground"
             >
-              He's read it<br />
-              <span className="italic text-accent">already.</span>
+              Your browser,<br />
+              <span className="italic text-accent">but it thinks.</span>
             </motion.h1>
 
             <motion.p
