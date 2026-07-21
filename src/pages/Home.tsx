@@ -57,14 +57,14 @@ const features = [
     desc: "Navigate to a new page and Victor resets automatically. He always knows where you are — even on single-page apps."
   },
   {
-    icon: "⚡",
-    title: "No account needed",
-    desc: "Download, install, done. Victor shows up on the next page you open. No sign-up, no API key, no configuration."
+    icon: "🕓",
+    title: "Conversation history",
+    desc: "Every chat is saved locally in your browser. Flip to the History tab to browse past conversations by page, re-read them in full, or clear everything with one tap."
   },
   {
-    icon: "🔒",
-    title: "Stays in your browser",
-    desc: "Victor runs as a local extension. Your browsing is yours — he reads the page, you ask a question, he answers. That's the whole loop."
+    icon: "🧩",
+    title: "Chrome, Edge, and Firefox",
+    desc: "One download works across all three browsers. Victor runs as a local extension — nothing leaves your device, no account required."
   }
 ];
 
@@ -195,7 +195,7 @@ export default function Home() {
               {
                 num: "Step one",
                 title: "Install the extension.",
-                desc: "Download the zip, load it into your browser, and you're done. No account, no API key, no settings to configure. Takes under a minute."
+                desc: "Download the zip and load it into Chrome, Edge, or Firefox. No account, no API key, nothing to configure. Takes under a minute."
               },
               {
                 num: "Step two",
@@ -284,12 +284,12 @@ export default function Home() {
               desc: "Victor processes the page the moment you land. By the time you open the chat, he already knows the content — you don't have to explain anything."
             },
             {
-              title: "Any page, any language.",
-              desc: "Articles, docs, threads, product pages, PDFs rendered as web pages. In English, French, Japanese, Arabic — Victor reads it and replies in whatever language you write in."
+              title: "Your history, your device.",
+              desc: "Every conversation is saved locally in your browser — never sent to a server, never used for training. Browse past chats by page or clear everything anytime."
             },
             {
-              title: "No account. No setup.",
-              desc: "Download the zip, load it in your browser, and Victor appears on the next page you visit. Nothing to configure, no sign-in, no subscription."
+              title: "Chrome, Edge, or Firefox.",
+              desc: "One zip works across all three browsers. Download, load it in, and Victor appears on the next page you visit. No sign-in, no subscription."
             }
           ].map((item, i) => (
             <motion.div
