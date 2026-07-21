@@ -1,25 +1,93 @@
 // Victor — AI Web Companion
+// Markdown rendering, streaming responses, selection tooltip, PDF support.
 // Works on Chrome, Edge, and Firefox.
-// Injects an isolated chat bubble using Shadow DOM so host page styles can't interfere.
 (function () {
   "use strict";
 
   if (document.getElementById("victor-companion-root")) return;
 
-  // Cross-browser shim: Firefox exposes `browser`, Chrome/Edge expose `chrome`.
+  // Cross-browser shim
   const browserAPI = (typeof browser !== "undefined" && browser.runtime) ? browser : chrome;
 
-  // ── Page context ─────────────────────────────────────────────────────────────
+  // ── Markdown renderer ─────────────────────────────────────────────────────────
+  function renderMarkdown(raw) {
+    function esc(s) {
+      return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+    }
+    function inline(s) {
+      const codes = [];
+      s = s.replace(/`([^`\n]+)`/g, (_, c) => {
+        codes.push(`<code>${esc(c)}</code>`);
+        return "\x00" + (codes.length - 1) + "\x00";
+      });
+      s = s.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+      s = s.replace(/\*([^*\n]+)\*/g, "<em>$1</em>");
+      s = s.replace(/\x00(\d+)\x00/g, (_, i) => codes[+i]);
+      return s;
+    }
+
+    const lines = raw.split("\n");
+    const parts = [];
+    let inPre = false, preLines = [], inUl = false, inOl = false;
+
+    function closeLists() {
+      if (inUl) { parts.push("</ul>"); inUl = false; }
+      if (inOl) { parts.push("</ol>"); inOl = false; }
+    }
+
+    for (const line of lines) {
+      if (inPre) {
+        if (/^```/.test(line.trim())) {
+          parts.push(`<pre><code>${esc(preLines.join("\n"))}</code></pre>`);
+          preLines = []; inPre = false;
+        } else { preLines.push(line); }
+        continue;
+      }
+      if (/^```/.test(line.trim())) { closeLists(); inPre = true; continue; }
+
+      const ulM = line.match(/^[-*+•]\s+(.+)/);
+      const olM = line.match(/^\d+\.\s+(.+)/);
+      const h3  = line.match(/^###\s+(.+)/);
+      const h2  = line.match(/^##\s+(.+)/);
+      const h1  = line.match(/^#\s+(.+)/);
+
+      if (ulM) {
+        if (inOl) { parts.push("</ol>"); inOl = false; }
+        if (!inUl) { parts.push("<ul>"); inUl = true; }
+        parts.push(`<li>${inline(esc(ulM[1]))}</li>`);
+      } else if (olM) {
+        if (inUl) { parts.push("</ul>"); inUl = false; }
+        if (!inOl) { parts.push("<ol>"); inOl = true; }
+        parts.push(`<li>${inline(esc(olM[1]))}</li>`);
+      } else {
+        closeLists();
+        if (h3) parts.push(`<h3>${inline(esc(h3[1]))}</h3>`);
+        else if (h2) parts.push(`<h2>${inline(esc(h2[1]))}</h2>`);
+        else if (h1) parts.push(`<h1>${inline(esc(h1[1]))}</h1>`);
+        else if (!line.trim()) parts.push("<br>");
+        else parts.push(`<p>${inline(esc(line))}</p>`);
+      }
+    }
+    closeLists();
+    if (inPre && preLines.length) parts.push(`<pre><code>${esc(preLines.join("\n"))}</code></pre>`);
+    return parts.join("");
+  }
+
+  // ── PDF detection ─────────────────────────────────────────────────────────────
+  const isPdfPage =
+    document.contentType === "application/pdf" ||
+    (/\.pdf(\?.*)?$/i.test(window.location.href) &&
+      (!document.body || !document.body.innerText.trim()));
+
+  // ── Page context ──────────────────────────────────────────────────────────────
   function getPageContext() {
     const title = document.title || "";
-    const url = window.location.href || "";
-    const raw = document.body ? document.body.innerText : "";
-    const text = raw.replace(/\s+/g, " ").trim().slice(0, 5000);
-    const lang =
-      document.documentElement.lang ||
+    const url   = window.location.href || "";
+    const raw   = (document.body && !isPdfPage) ? document.body.innerText : "";
+    const text  = raw.replace(/\s+/g, " ").trim().slice(0, 5000);
+    const lang  = document.documentElement.lang ||
       document.documentElement.getAttribute("xml:lang") ||
-      navigator.language ||
-      "";
+      navigator.language || "";
     return { title, url, text, lang };
   }
 
@@ -28,7 +96,7 @@
     catch { return url; }
   }
 
-  // ── History storage ──────────────────────────────────────────────────────────
+  // ── History storage ───────────────────────────────────────────────────────────
   const STORAGE_KEY = "victor_history";
   const MAX_SESSIONS = 100;
 
@@ -46,7 +114,7 @@
     if (!session || session.messages.length === 0) { if (cb) cb(); return; }
     loadHistory((history) => {
       const filtered = history.filter((s) => s.id !== session.id);
-      const updated = [session, ...filtered].slice(0, MAX_SESSIONS);
+      const updated  = [session, ...filtered].slice(0, MAX_SESSIONS);
       browserAPI.storage.local.set({ [STORAGE_KEY]: updated }).then(() => { if (cb) cb(); });
     });
   }
@@ -56,12 +124,12 @@
   }
 
   function formatDate(ts) {
-    const d = new Date(ts);
-    const now = new Date();
+    const d    = new Date(ts);
+    const now  = new Date();
     const diff = now - d;
-    if (diff < 60_000) return "Just now";
-    if (diff < 3_600_000) return Math.floor(diff / 60_000) + "m ago";
-    if (diff < 86_400_000) return Math.floor(diff / 3_600_000) + "h ago";
+    if (diff < 60_000)      return "Just now";
+    if (diff < 3_600_000)   return Math.floor(diff / 60_000) + "m ago";
+    if (diff < 86_400_000)  return Math.floor(diff / 3_600_000) + "h ago";
     if (diff < 604_800_000) {
       const days = Math.floor(diff / 86_400_000);
       return days === 1 ? "Yesterday" : days + "d ago";
@@ -69,15 +137,15 @@
     return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
   }
 
-  // ── State ────────────────────────────────────────────────────────────────────
-  let isOpen = false;
+  // ── State ─────────────────────────────────────────────────────────────────────
+  let isOpen    = false;
   let isLoading = false;
-  let messages = [];
-  let lastFailedMessages = null; // for retry
+  let messages  = [];
   let pageContext = getPageContext();
-  let apiUrl = "";
-  let shadow = null;
-  let activeView = "chat"; // "chat" | "history"
+  let apiUrl    = "";
+  let shadow    = null;
+  let activeView = "chat";
+  let isPdfReady = false;
   let currentSession = {
     id: generateId(),
     url: pageContext.url,
@@ -88,20 +156,25 @@
   };
   let expandedSessionId = null;
 
-  // ── Suggested prompts ────────────────────────────────────────────────────────
+  // ── Suggested prompts ─────────────────────────────────────────────────────────
   const SUGGESTED_PROMPTS = [
     { icon: "📋", label: "Summarize this" },
     { icon: "🔍", label: "What's the main argument?" },
     { icon: "❓", label: "What should I know before reading?" },
     { icon: "⚖️", label: "What's the counterargument?" },
   ];
+  const PDF_PROMPTS = [
+    { icon: "📋", label: "Summarize this PDF" },
+    { icon: "🔑", label: "What are the key points?" },
+    { icon: "❓", label: "What should I know?" },
+    { icon: "📝", label: "Pull out the action items" },
+  ];
 
-  // ── Shadow DOM setup ─────────────────────────────────────────────────────────
+  // ── Shadow DOM ────────────────────────────────────────────────────────────────
   function createUI() {
     const host = document.createElement("div");
     host.id = "victor-companion-root";
-    host.style.cssText =
-      "position:fixed;bottom:24px;right:24px;z-index:2147483647;display:block;";
+    host.style.cssText = "position:fixed;bottom:24px;right:24px;z-index:2147483647;display:block;";
     document.body.appendChild(host);
 
     shadow = host.attachShadow({ mode: "open" });
@@ -130,6 +203,24 @@
         }
         #v-btn.has-new .v-badge { display: block; }
 
+        /* ── Selection tooltip ── */
+        #v-sel-tip {
+          position: fixed;
+          background: #1a1a38; border: 1px solid #3a3a6a; border-radius: 20px;
+          padding: 6px 14px;
+          display: flex; align-items: center; gap: 6px;
+          font-size: 12px; color: #c0c0e8; cursor: pointer;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+          z-index: 2147483646;
+          opacity: 0; pointer-events: none;
+          transition: opacity 0.15s, transform 0.15s;
+          transform: translateY(4px);
+          white-space: nowrap; user-select: none;
+        }
+        #v-sel-tip.visible { opacity: 1; pointer-events: all; transform: translateY(0); }
+        #v-sel-tip .v-sel-icon { font-size: 11px; }
+        #v-sel-tip:hover { background: #252550; border-color: #6d5ffa; color: #e0e0f8; }
+
         /* ── Panel ── */
         #v-panel {
           position: fixed; bottom: 92px; right: 24px;
@@ -144,12 +235,7 @@
         #v-panel.open { transform: scale(1) translateY(0); opacity: 1; pointer-events: all; }
 
         /* ── Header ── */
-        #v-header {
-          padding: 14px 18px 0;
-          background: #13132b;
-          border-bottom: 1px solid #2a2a4a;
-          flex-shrink: 0;
-        }
+        #v-header { padding: 14px 18px 0; background: #13132b; border-bottom: 1px solid #2a2a4a; flex-shrink: 0; }
         .v-header-top { display: flex; align-items: center; gap: 12px; padding-bottom: 12px; }
         .v-avatar {
           width: 36px; height: 36px; border-radius: 50%;
@@ -164,51 +250,50 @@
         #v-close:hover { color: #f0f0f8; background: #2a2a4a; }
 
         /* ── Tabs ── */
-        .v-tabs { display: flex; gap: 0; }
+        .v-tabs { display: flex; }
         .v-tab { flex: 1; padding: 8px 0; font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; background: none; border: none; cursor: pointer; color: #5050a0; border-bottom: 2px solid transparent; transition: color 0.15s, border-color 0.15s; }
         .v-tab.active { color: #a78bfa; border-bottom-color: #6d5ffa; }
         .v-tab:hover:not(.active) { color: #8080c0; }
 
         /* ── Messages ── */
-        #v-messages {
-          flex: 1; overflow-y: auto; padding: 16px;
-          display: flex; flex-direction: column; gap: 12px;
-          scroll-behavior: smooth;
-        }
+        #v-messages { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; scroll-behavior: smooth; }
         #v-messages::-webkit-scrollbar { width: 4px; }
-        #v-messages::-webkit-scrollbar-track { background: transparent; }
         #v-messages::-webkit-scrollbar-thumb { background: #2a2a4a; border-radius: 2px; }
 
         .v-msg { display: flex; gap: 8px; animation: v-fadein 0.2s ease; position: relative; }
         @keyframes v-fadein { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
         .v-msg.user { flex-direction: row-reverse; }
 
-        .v-msg-avatar {
-          width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
-          background: linear-gradient(135deg, #6d5ffa, #a78bfa);
-          display: flex; align-items: center; justify-content: center;
-          font-size: 12px; font-weight: 800; color: #fff; margin-top: 2px;
-        }
+        .v-msg-avatar { width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0; background: linear-gradient(135deg, #6d5ffa, #a78bfa); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; color: #fff; margin-top: 2px; }
         .v-msg.user .v-msg-avatar { background: #2a2a4a; color: #a0a0c0; font-size: 13px; }
 
         .v-msg-body { display: flex; flex-direction: column; gap: 4px; max-width: 78%; }
         .v-msg.user .v-msg-body { align-items: flex-end; }
 
-        .v-msg-bubble {
-          padding: 10px 14px; border-radius: 16px;
-          font-size: 13.5px; line-height: 1.55; word-wrap: break-word;
-        }
+        .v-msg-bubble { padding: 10px 14px; border-radius: 16px; font-size: 13.5px; line-height: 1.6; word-wrap: break-word; }
         .v-msg.assistant .v-msg-bubble { background: #1a1a38; color: #e0e0f8; border-bottom-left-radius: 4px; }
         .v-msg.user .v-msg-bubble { background: #6d5ffa; color: #fff; border-bottom-right-radius: 4px; }
 
+        /* ── Markdown styles ── */
+        .v-msg-bubble p { margin-bottom: 6px; }
+        .v-msg-bubble p:last-child { margin-bottom: 0; }
+        .v-msg-bubble br { display: block; margin-top: 4px; }
+        .v-msg-bubble ul, .v-msg-bubble ol { padding-left: 18px; margin: 6px 0; display: flex; flex-direction: column; gap: 3px; }
+        .v-msg-bubble li { font-size: 13px; }
+        .v-msg-bubble strong { font-weight: 700; }
+        .v-msg-bubble em { font-style: italic; }
+        .v-msg-bubble code { background: rgba(109,95,250,0.18); padding: 1px 5px; border-radius: 4px; font-family: "SF Mono","Fira Code",monospace; font-size: 12px; }
+        .v-msg-bubble pre { background: #09091a; border: 1px solid #2a2a4a; border-radius: 8px; padding: 10px 12px; margin: 6px 0; overflow-x: auto; }
+        .v-msg-bubble pre code { background: none; padding: 0; font-size: 12px; line-height: 1.5; }
+        .v-msg-bubble h1, .v-msg-bubble h2 { font-size: 14px; font-weight: 700; margin: 8px 0 4px; }
+        .v-msg-bubble h3 { font-size: 13px; font-weight: 600; margin: 6px 0 3px; }
+
+        /* ── Streaming cursor ── */
+        .v-cursor { display: inline-block; width: 2px; height: 13px; background: #a78bfa; border-radius: 1px; margin-left: 2px; vertical-align: middle; animation: v-blink 0.85s step-end infinite; }
+        @keyframes v-blink { 50% { opacity: 0; } }
+
         /* ── Copy button ── */
-        .v-copy-btn {
-          display: flex; align-items: center; gap: 4px;
-          background: none; border: none; cursor: pointer;
-          color: #5050a0; font-size: 11px; padding: 2px 6px;
-          border-radius: 4px; transition: color 0.15s, background 0.15s;
-          align-self: flex-start; opacity: 0; transition: opacity 0.15s, color 0.15s, background 0.15s;
-        }
+        .v-copy-btn { display: flex; align-items: center; gap: 4px; background: none; border: none; cursor: pointer; color: #5050a0; font-size: 11px; padding: 2px 6px; border-radius: 4px; align-self: flex-start; opacity: 0; transition: opacity 0.15s, color 0.15s, background 0.15s; }
         .v-msg:hover .v-copy-btn { opacity: 1; }
         .v-copy-btn:hover { color: #a78bfa; background: #1a1a38; }
         .v-copy-btn.copied { color: #22c55e; }
@@ -220,76 +305,44 @@
         .v-retry-btn { align-self: flex-start; display: flex; align-items: center; gap: 5px; background: none; border: 1px solid #3a3a5a; color: #a0a0c0; font-size: 11.5px; padding: 5px 10px; border-radius: 8px; cursor: pointer; transition: border-color 0.15s, color 0.15s, background 0.15s; }
         .v-retry-btn:hover { border-color: #6d5ffa; color: #a78bfa; background: rgba(109,95,250,0.08); }
 
-        /* ── Typing indicator ── */
-        .v-typing { display: flex; align-items: center; gap: 4px; padding: 4px 2px; }
-        .v-typing span { width: 6px; height: 6px; border-radius: 50%; background: #6d5ffa; display: inline-block; animation: v-bounce 1.2s infinite; }
-        .v-typing span:nth-child(2) { animation-delay: 0.2s; }
-        .v-typing span:nth-child(3) { animation-delay: 0.4s; }
-        @keyframes v-bounce { 0%, 80%, 100% { transform: translateY(0); opacity: 0.4; } 40% { transform: translateY(-5px); opacity: 1; } }
+        /* ── PDF status ── */
+        #v-pdf-status { margin: 8px 16px 0; padding: 7px 12px; background: rgba(109,95,250,0.08); border: 1px solid rgba(109,95,250,0.2); border-radius: 10px; font-size: 11.5px; color: #7070b0; display: flex; align-items: center; gap: 7px; flex-shrink: 0; }
+        .v-pdf-spinner { width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid #3a3a70; border-top-color: #a78bfa; animation: v-spin 0.8s linear infinite; flex-shrink: 0; }
+        @keyframes v-spin { to { transform: rotate(360deg); } }
 
         /* ── No-API notice ── */
         .v-notice { text-align: center; padding: 20px 16px; color: #5050a0; font-size: 13px; line-height: 1.6; }
         .v-notice a { color: #6d5ffa; text-decoration: underline; cursor: pointer; }
 
         /* ── Suggested prompts ── */
-        #v-prompts {
-          padding: 12px 16px 8px;
-          display: flex; flex-direction: column; gap: 8px;
-          flex-shrink: 0;
-        }
+        #v-prompts { padding: 12px 16px 8px; display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; }
         .v-prompts-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: #5050a0; font-weight: 600; }
         .v-prompts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-        .v-prompt-chip {
-          display: flex; align-items: center; gap: 6px;
-          background: #13132b; border: 1px solid #2a2a4a;
-          border-radius: 10px; padding: 8px 10px;
-          font-size: 12px; color: #c0c0e0; cursor: pointer;
-          transition: border-color 0.15s, background 0.15s, color 0.15s;
-          text-align: left;
-        }
+        .v-prompt-chip { display: flex; align-items: center; gap: 6px; background: #13132b; border: 1px solid #2a2a4a; border-radius: 10px; padding: 8px 10px; font-size: 12px; color: #c0c0e0; cursor: pointer; transition: border-color 0.15s, background 0.15s, color 0.15s; text-align: left; }
         .v-prompt-chip:hover { border-color: #6d5ffa; background: rgba(109,95,250,0.1); color: #e0e0f8; }
         .v-prompt-chip .v-chip-icon { font-size: 14px; flex-shrink: 0; }
 
         /* ── Input area ── */
-        #v-input-area {
-          padding: 12px 16px; background: #13132b; border-top: 1px solid #2a2a4a;
-          display: flex; gap: 10px; align-items: flex-end; flex-shrink: 0;
-        }
-        #v-input {
-          flex: 1; background: #09091a; border: 1px solid #2a2a4a; border-radius: 12px;
-          color: #f0f0f8; font-size: 13.5px; font-family: inherit;
-          padding: 10px 14px; resize: none; outline: none;
-          min-height: 40px; max-height: 120px; line-height: 1.45;
-          transition: border-color 0.15s;
-        }
+        #v-input-area { padding: 12px 16px; background: #13132b; border-top: 1px solid #2a2a4a; display: flex; gap: 10px; align-items: flex-end; flex-shrink: 0; }
+        #v-input { flex: 1; background: #09091a; border: 1px solid #2a2a4a; border-radius: 12px; color: #f0f0f8; font-size: 13.5px; font-family: inherit; padding: 10px 14px; resize: none; outline: none; min-height: 40px; max-height: 120px; line-height: 1.45; transition: border-color 0.15s; }
         #v-input:focus { border-color: #6d5ffa; }
         #v-input::placeholder { color: #404060; }
-        #v-send {
-          width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
-          background: linear-gradient(135deg, #6d5ffa, #a78bfa);
-          border: none; cursor: pointer;
-          display: flex; align-items: center; justify-content: center;
-          transition: opacity 0.15s, transform 0.15s; margin-bottom: 2px;
-        }
+        #v-send { width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0; background: linear-gradient(135deg, #6d5ffa, #a78bfa); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: opacity 0.15s, transform 0.15s; margin-bottom: 2px; }
         #v-send:hover:not(:disabled) { opacity: 0.85; transform: scale(1.05); }
         #v-send:disabled { opacity: 0.35; cursor: not-allowed; }
         #v-send svg { display: block; }
 
         /* ── History view ── */
-        #v-history { flex: 1; overflow-y: auto; padding: 0; display: flex; flex-direction: column; }
+        #v-history { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
         #v-history::-webkit-scrollbar { width: 4px; }
-        #v-history::-webkit-scrollbar-track { background: transparent; }
         #v-history::-webkit-scrollbar-thumb { background: #2a2a4a; border-radius: 2px; }
-
         .v-history-toolbar { padding: 10px 16px; border-bottom: 1px solid #1a1a38; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
         .v-history-count { font-size: 11px; color: #5050a0; }
         #v-clear-history { font-size: 11px; color: #5050a0; background: none; border: none; cursor: pointer; padding: 3px 8px; border-radius: 6px; transition: color 0.15s, background 0.15s; }
         #v-clear-history:hover { color: #f87171; background: rgba(248,113,113,0.1); }
-
         .v-history-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 32px 20px; gap: 12px; color: #5050a0; text-align: center; }
         .v-history-empty .v-empty-icon { font-size: 32px; opacity: 0.4; }
         .v-history-empty p { font-size: 13px; line-height: 1.5; }
-
         .v-session { border-bottom: 1px solid #1a1a38; cursor: pointer; transition: background 0.15s; }
         .v-session:hover { background: #13132b; }
         .v-session-header { padding: 12px 16px; display: flex; align-items: flex-start; gap: 10px; }
@@ -301,7 +354,6 @@
         .v-session-chevron { font-size: 12px; color: #3a3a5a; flex-shrink: 0; margin-top: 6px; transition: transform 0.2s; }
         .v-session.expanded .v-session-chevron { transform: rotate(90deg); }
         .v-session-preview { font-size: 12px; color: #5050a0; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
         .v-session-messages { padding: 0 16px 12px 58px; display: none; flex-direction: column; gap: 8px; }
         .v-session.expanded .v-session-messages { display: flex; }
         .v-mini-msg { font-size: 12px; line-height: 1.5; }
@@ -315,6 +367,12 @@
         .v-view { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-height: 0; }
         .v-view.hidden { display: none; }
       </style>
+
+      <!-- Selection tooltip -->
+      <div id="v-sel-tip">
+        <span class="v-sel-icon">✦</span>
+        <span>Ask Victor about this</span>
+      </div>
 
       <!-- Floating button -->
       <button id="v-btn" aria-label="Open Victor">
@@ -372,22 +430,72 @@
     buildPromptChips();
     bindEvents();
     updatePageTitle();
+    setupSelectionListener();
+
+    if (isPdfPage) showPdfStatus();
   }
 
   function updatePageTitle() {
     const el = shadow.getElementById("v-page-title");
     if (!el) return;
-    const hostname = getDomain(pageContext.url);
-    el.textContent = hostname || "this page";
-    el.title = pageContext.title;
+    if (isPdfPage && !isPdfReady) {
+      el.textContent = "Reading PDF…";
+    } else {
+      const hostname = getDomain(pageContext.url);
+      el.textContent = hostname || "this page";
+      el.title = pageContext.title;
+    }
   }
 
-  // ── Prompt chips ─────────────────────────────────────────────────────────────
+  // ── PDF status bar ────────────────────────────────────────────────────────────
+  function showPdfStatus() {
+    const view = shadow.getElementById("v-view-chat");
+    if (!view || shadow.getElementById("v-pdf-status")) return;
+    const bar = document.createElement("div");
+    bar.id = "v-pdf-status";
+    bar.innerHTML = `<div class="v-pdf-spinner"></div><span>Extracting PDF text…</span>`;
+    view.insertBefore(bar, view.firstChild);
+  }
+
+  function removePdfStatus() {
+    shadow.getElementById("v-pdf-status")?.remove();
+  }
+
+  // ── PDF extraction ────────────────────────────────────────────────────────────
+  async function extractPdfText() {
+    if (!isPdfPage || !apiUrl) return;
+    try {
+      const endpoint = apiUrl.replace(/\/$/, "") + "/victor/extract-pdf";
+      const resp = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pdfUrl: window.location.href }),
+      });
+      if (!resp.ok) { removePdfStatus(); return; }
+      const { text } = await resp.json();
+      if (text) {
+        pageContext.text = text.slice(0, 5000);
+        pageContext.title = document.title || "PDF Document";
+        isPdfReady = true;
+        removePdfStatus();
+        updatePageTitle();
+        // Rebuild chips to show PDF-specific prompts
+        buildPromptChips();
+      } else {
+        removePdfStatus();
+      }
+    } catch {
+      removePdfStatus();
+    }
+  }
+
+  // ── Prompt chips ──────────────────────────────────────────────────────────────
   function buildPromptChips() {
     const grid = shadow.getElementById("v-prompts-grid");
     if (!grid) return;
     grid.innerHTML = "";
-    SUGGESTED_PROMPTS.forEach(({ icon, label }) => {
+    const prompts = isPdfPage ? PDF_PROMPTS : SUGGESTED_PROMPTS;
+    prompts.forEach(({ icon, label }) => {
       const btn = document.createElement("button");
       btn.className = "v-prompt-chip";
       btn.innerHTML = `<span class="v-chip-icon">${icon}</span><span>${label}</span>`;
@@ -422,9 +530,9 @@
     if (tab === "chat") shadow.getElementById("v-input")?.focus();
   }
 
-  // ── History rendering ────────────────────────────────────────────────────────
+  // ── History rendering ─────────────────────────────────────────────────────────
   function renderHistory() {
-    const list = shadow.getElementById("v-history-list");
+    const list  = shadow.getElementById("v-history-list");
     const count = shadow.getElementById("v-history-count");
     if (!list) return;
 
@@ -434,20 +542,15 @@
         : sessions.length === 1 ? "1 conversation" : sessions.length + " conversations";
 
       if (sessions.length === 0) {
-        list.innerHTML = `
-          <div class="v-history-empty">
-            <div class="v-empty-icon">💬</div>
-            <p>Your conversation history will appear here. Start chatting on any page.</p>
-          </div>
-        `;
+        list.innerHTML = `<div class="v-history-empty"><div class="v-empty-icon">💬</div><p>Your conversation history will appear here.</p></div>`;
         return;
       }
 
       list.innerHTML = "";
       sessions.forEach((session) => {
-        const isExpanded = expandedSessionId === session.id;
-        const userMessages = session.messages.filter((m) => m.role === "user");
-        const preview = userMessages.length > 0 ? userMessages[0].content : null;
+        const isExpanded  = expandedSessionId === session.id;
+        const userMsgs    = session.messages.filter((m) => m.role === "user");
+        const preview     = userMsgs.length > 0 ? userMsgs[0].content : null;
 
         const el = document.createElement("div");
         el.className = "v-session" + (isExpanded ? " expanded" : "");
@@ -465,7 +568,7 @@
                 <span class="v-session-dot"></span>
                 <span>${formatDate(session.timestamp)}</span>
                 <span class="v-session-dot"></span>
-                <span>${userMessages.length} msg${userMessages.length !== 1 ? "s" : ""}</span>
+                <span>${userMsgs.length} msg${userMsgs.length !== 1 ? "s" : ""}</span>
               </div>
               ${preview ? `<div class="v-session-preview">${escapeHtml(truncate(preview, 60))}</div>` : ""}
             </div>
@@ -492,13 +595,72 @@
 
   function escapeHtml(str) {
     return String(str)
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;");
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   }
 
-  // ── Events ───────────────────────────────────────────────────────────────────
+  // ── Selection tooltip ─────────────────────────────────────────────────────────
+  function setupSelectionListener() {
+    const tip = shadow.getElementById("v-sel-tip");
+    if (!tip) return;
+
+    let selTimeout = null;
+
+    document.addEventListener("mouseup", (e) => {
+      const root = document.getElementById("victor-companion-root");
+      if (root && root.contains(e.target)) return;
+
+      clearTimeout(selTimeout);
+      selTimeout = setTimeout(() => {
+        const sel = window.getSelection();
+        if (!sel || sel.isCollapsed) { hideTip(); return; }
+        const text = sel.toString().trim();
+        if (text.length < 8) { hideTip(); return; }
+
+        try {
+          const range = sel.getRangeAt(0);
+          const rect  = range.getBoundingClientRect();
+          if (!rect.width) { hideTip(); return; }
+
+          const tipW  = 200;
+          let left    = rect.left + rect.width / 2 - tipW / 2;
+          left        = Math.max(8, Math.min(left, window.innerWidth - tipW - 8));
+          const top   = Math.max(8, rect.top - 42);
+
+          tip.style.left = left + "px";
+          tip.style.top  = top + "px";
+          tip.classList.add("visible");
+          tip._selText = text;
+        } catch { hideTip(); }
+      }, 200);
+    });
+
+    document.addEventListener("mousedown", (e) => {
+      if (e.target !== tip && !tip.contains(e.target)) hideTip();
+    });
+
+    tip.addEventListener("click", () => {
+      const text = tip._selText;
+      hideTip();
+      if (!text) return;
+      if (!isOpen) openPanel();
+      hidePrompts();
+      const input = shadow.getElementById("v-input");
+      if (input) {
+        input.value = `About the highlighted text: "${text.slice(0, 280)}"\n\n`;
+        input.focus();
+        input.setSelectionRange(input.value.length, input.value.length);
+        autoResize(input);
+        shadow.getElementById("v-send").disabled = false;
+      }
+    });
+  }
+
+  function hideTip() {
+    shadow.getElementById("v-sel-tip")?.classList.remove("visible");
+  }
+
+  // ── Events ────────────────────────────────────────────────────────────────────
   function bindEvents() {
     shadow.getElementById("v-btn").addEventListener("click", () => {
       if (isOpen) closePanel(); else openPanel();
@@ -513,7 +675,7 @@
       clearHistory(() => renderHistory());
     });
 
-    const input = shadow.getElementById("v-input");
+    const input   = shadow.getElementById("v-input");
     const sendBtn = shadow.getElementById("v-send");
 
     input.addEventListener("input", () => {
@@ -541,36 +703,31 @@
     shadow.getElementById("v-btn").classList.remove("has-new");
     shadow.getElementById("v-panel").classList.add("open");
     if (activeView === "chat") shadow.getElementById("v-input").focus();
-    // Show prompts if no messages yet
-    if (messages.length === 0) {
-      showPrompts();
-    }
+    if (messages.length === 0) showPrompts();
   }
 
   function closePanel() {
     isOpen = false;
     shadow.getElementById("v-panel").classList.remove("open");
     persistCurrentSession();
+    hideTip();
   }
 
-  // ── Persist session ──────────────────────────────────────────────────────────
+  // ── Persist session ───────────────────────────────────────────────────────────
   function persistCurrentSession() {
     const hasUserMessage = messages.some((m) => m.role === "user");
     if (!hasUserMessage) return;
     currentSession.messages = [...messages];
-    currentSession.title = pageContext.title || currentSession.domain;
+    currentSession.title    = pageContext.title || currentSession.domain;
     saveSession(currentSession, () => {});
   }
 
-  // ── Copy to clipboard ────────────────────────────────────────────────────────
+  // ── Copy ─────────────────────────────────────────────────────────────────────
   function copyText(text, btn) {
     navigator.clipboard.writeText(text).then(() => {
       btn.classList.add("copied");
       btn.innerHTML = `<svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg> Copied`;
-      setTimeout(() => {
-        btn.classList.remove("copied");
-        btn.innerHTML = copyBtnInner();
-      }, 2000);
+      setTimeout(() => { btn.classList.remove("copied"); btn.innerHTML = copyBtnInner(); }, 2000);
     }).catch(() => {});
   }
 
@@ -578,36 +735,28 @@
     return `<svg width="11" height="11" viewBox="0 0 12 12" fill="none"><rect x="4" y="4" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M1 8V2a1 1 0 0 1 1-1h6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg> Copy`;
   }
 
-  // ── Messaging ────────────────────────────────────────────────────────────────
-  function renderMessages() {
-    const container = shadow.getElementById("v-messages");
-    if (!container) return;
-    container.innerHTML = "";
-
-    for (const msg of messages) {
-      container.appendChild(buildMessageEl(msg.role, msg.content));
-    }
-
-    container.scrollTop = container.scrollHeight;
-  }
-
+  // ── Message rendering ─────────────────────────────────────────────────────────
   function buildMessageEl(role, content) {
-    const row = document.createElement("div");
+    const row    = document.createElement("div");
     row.className = "v-msg " + role;
 
     const avatar = document.createElement("div");
     avatar.className = "v-msg-avatar";
     avatar.textContent = role === "assistant" ? "V" : "U";
 
-    const body = document.createElement("div");
+    const body   = document.createElement("div");
     body.className = "v-msg-body";
 
     const bubble = document.createElement("div");
     bubble.className = "v-msg-bubble";
-    bubble.textContent = content;
+
+    if (role === "assistant") {
+      bubble.innerHTML = renderMarkdown(content);
+    } else {
+      bubble.textContent = content;
+    }
     body.appendChild(bubble);
 
-    // Copy button on assistant messages
     if (role === "assistant") {
       const copyBtn = document.createElement("button");
       copyBtn.className = "v-copy-btn";
@@ -628,60 +777,115 @@
     container.scrollTop = container.scrollHeight;
   }
 
-  function showTyping() {
-    const container = shadow.getElementById("v-messages");
-    if (!container) return;
-    const row = document.createElement("div");
-    row.className = "v-msg assistant";
-    row.id = "v-typing-row";
+  // ── Streaming API call ────────────────────────────────────────────────────────
+  async function doApiCall(msgs) {
+    if (!apiUrl) { showNoApiNotice(); return; }
+    isLoading = true;
+    shadow.getElementById("v-send").disabled = true;
 
+    const container = shadow.getElementById("v-messages");
+    if (!container) { isLoading = false; return; }
+
+    // Build the assistant bubble immediately with a cursor
+    const row    = document.createElement("div");
+    row.className = "v-msg assistant";
     const avatar = document.createElement("div");
     avatar.className = "v-msg-avatar";
     avatar.textContent = "V";
-
-    const body = document.createElement("div");
+    const body   = document.createElement("div");
     body.className = "v-msg-body";
     const bubble = document.createElement("div");
     bubble.className = "v-msg-bubble";
-    bubble.innerHTML = '<div class="v-typing"><span></span><span></span><span></span></div>';
+    bubble.innerHTML = '<span class="v-cursor"></span>';
+    const copyBtn = document.createElement("button");
+    copyBtn.className = "v-copy-btn";
+    copyBtn.style.display = "none";
+    copyBtn.innerHTML = copyBtnInner();
     body.appendChild(bubble);
-
+    body.appendChild(copyBtn);
     row.appendChild(avatar);
     row.appendChild(body);
     container.appendChild(row);
     container.scrollTop = container.scrollHeight;
-  }
 
-  function removeTyping() {
-    const el = shadow.getElementById("v-typing-row");
-    if (el) el.remove();
-  }
+    let accumulated = "";
 
-  function showErrorWithRetry(retryMessages) {
-    const container = shadow.getElementById("v-messages");
-    if (!container) return;
+    try {
+      const endpoint = apiUrl.replace(/\/$/, "") + "/victor/chat";
+      const resp = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: msgs, pageContext, stream: true }),
+      });
 
-    const wrapper = document.createElement("div");
-    wrapper.className = "v-error-row";
-    wrapper.id = "v-error-row";
+      if (!resp.ok || !resp.body) throw new Error(`HTTP ${resp.status}`);
 
-    const errMsg = document.createElement("div");
-    errMsg.className = "v-error-msg";
-    errMsg.textContent = "Couldn't reach Victor right now. Check your connection and try again.";
+      const reader  = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = "";
 
-    const retryBtn = document.createElement("button");
-    retryBtn.className = "v-retry-btn";
-    retryBtn.innerHTML = `<svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M10 6A4 4 0 1 1 6 2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M6 2l2-2M6 2l2 2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg> Retry`;
-    retryBtn.addEventListener("click", () => {
-      wrapper.remove();
-      lastFailedMessages = null;
-      doApiCall(retryMessages);
-    });
+      outer:
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        const lines = buf.split("\n");
+        buf = lines.pop();
 
-    wrapper.appendChild(errMsg);
-    wrapper.appendChild(retryBtn);
-    container.appendChild(wrapper);
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          const data = line.slice(6).trim();
+          if (data === "[DONE]") break outer;
+          try {
+            const { content } = JSON.parse(data);
+            if (content) {
+              accumulated += content;
+              bubble.innerHTML = renderMarkdown(accumulated) + '<span class="v-cursor"></span>';
+              container.scrollTop = container.scrollHeight;
+            }
+          } catch {}
+        }
+      }
+    } catch {
+      row.remove();
+      isLoading = false;
+      shadow.getElementById("v-send").disabled =
+        shadow.getElementById("v-input").value.trim() === "";
+      showErrorWithRetry(msgs);
+      return;
+    }
+
+    // Finalise
+    const finalContent = accumulated || "Sorry, I couldn't come up with a response.";
+    bubble.innerHTML = renderMarkdown(finalContent);
+    copyBtn.style.display = "";
+    copyBtn.addEventListener("click", () => copyText(finalContent, copyBtn));
+
+    messages.push({ role: "assistant", content: finalContent });
+    persistCurrentSession();
+
+    isLoading = false;
+    shadow.getElementById("v-send").disabled =
+      shadow.getElementById("v-input").value.trim() === "";
     container.scrollTop = container.scrollHeight;
+  }
+
+  async function sendMessageText(text) {
+    if (!text || isLoading) return;
+    hidePrompts();
+    messages.push({ role: "user", content: text });
+    appendMessageEl("user", text);
+    await doApiCall([...messages]);
+  }
+
+  async function sendMessage() {
+    const input = shadow.getElementById("v-input");
+    const text  = input.value.trim();
+    if (!text || isLoading) return;
+    input.value = "";
+    input.style.height = "";
+    shadow.getElementById("v-send").disabled = true;
+    await sendMessageText(text);
   }
 
   function showNoApiNotice() {
@@ -698,77 +902,32 @@
     });
   }
 
-  async function doApiCall(msgs) {
-    if (!apiUrl) { showNoApiNotice(); return; }
-    isLoading = true;
-    shadow.getElementById("v-send").disabled = true;
-    showTyping();
+  function showErrorWithRetry(retryMessages) {
+    const container = shadow.getElementById("v-messages");
+    if (!container) return;
 
-    const result = await callAPI(msgs);
-    removeTyping();
-    isLoading = false;
-    shadow.getElementById("v-send").disabled =
-      shadow.getElementById("v-input").value.trim() === "";
+    const wrapper = document.createElement("div");
+    wrapper.className = "v-error-row";
 
-    if (result.error) {
-      if (result.error === "no_api_url") { showNoApiNotice(); return; }
-      lastFailedMessages = msgs;
-      showErrorWithRetry(msgs);
-      return;
-    }
+    const errMsg = document.createElement("div");
+    errMsg.className = "v-error-msg";
+    errMsg.textContent = "Couldn't reach Victor right now. Check your connection and try again.";
 
-    messages.push({ role: "assistant", content: result.reply });
-    appendMessageEl("assistant", result.reply);
-    persistCurrentSession();
-  }
-
-  async function sendMessageText(text) {
-    if (!text || isLoading) return;
-    hidePrompts();
-    messages.push({ role: "user", content: text });
-    appendMessageEl("user", text);
-    await doApiCall([...messages]);
-  }
-
-  async function sendMessage() {
-    const input = shadow.getElementById("v-input");
-    const text = input.value.trim();
-    if (!text || isLoading) return;
-    input.value = "";
-    input.style.height = "";
-    shadow.getElementById("v-send").disabled = true;
-    await sendMessageText(text);
-  }
-
-  function appendMessage(role, content) {
-    messages.push({ role, content });
-  }
-
-  function callAPI(msgs) {
-    return new Promise((resolve) => {
-      browserAPI.runtime.sendMessage(
-        { type: "VICTOR_CHAT", payload: { messages: msgs, pageContext, apiUrl } },
-        (response) => {
-          if (browserAPI.runtime.lastError) {
-            resolve({ error: browserAPI.runtime.lastError.message });
-          } else {
-            resolve(response || { error: "no_response" });
-          }
-        }
-      );
+    const retryBtn = document.createElement("button");
+    retryBtn.className = "v-retry-btn";
+    retryBtn.innerHTML = `<svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M10 6A4 4 0 1 1 6 2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M6 2l2-2M6 2l2 2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg> Retry`;
+    retryBtn.addEventListener("click", () => {
+      wrapper.remove();
+      doApiCall(retryMessages);
     });
+
+    wrapper.appendChild(errMsg);
+    wrapper.appendChild(retryBtn);
+    container.appendChild(wrapper);
+    container.scrollTop = container.scrollHeight;
   }
 
-  // ── Init ─────────────────────────────────────────────────────────────────────
-  function start() {
-    browserAPI.runtime.sendMessage({ type: "VICTOR_GET_CONFIG" }, (response) => {
-      if (browserAPI.runtime.lastError) return;
-      apiUrl = response?.apiUrl || "";
-      createUI();
-    });
-  }
-
-  // Handle SPA navigation
+  // ── SPA navigation ────────────────────────────────────────────────────────────
   let lastUrl = location.href;
   new MutationObserver(() => {
     if (location.href !== lastUrl) {
@@ -776,7 +935,6 @@
       lastUrl = location.href;
       pageContext = getPageContext();
       messages = [];
-      lastFailedMessages = null;
 
       currentSession = {
         id: generateId(),
@@ -797,9 +955,17 @@
     }
   }).observe(document.body, { childList: true, subtree: true });
 
-  window.addEventListener("beforeunload", () => {
-    persistCurrentSession();
-  });
+  window.addEventListener("beforeunload", () => persistCurrentSession());
+
+  // ── Init ─────────────────────────────────────────────────────────────────────
+  function start() {
+    browserAPI.runtime.sendMessage({ type: "VICTOR_GET_CONFIG" }, (response) => {
+      if (browserAPI.runtime.lastError) return;
+      apiUrl = response?.apiUrl || "";
+      createUI();
+      if (isPdfPage) extractPdfText();
+    });
+  }
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", start);
