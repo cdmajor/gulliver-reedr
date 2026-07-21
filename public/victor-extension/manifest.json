@@ -1,9 +1,10 @@
 {
   "manifest_version": 3,
   "name": "Victor — AI Web Companion",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Victor reads every page you visit and is always ready to discuss, explain, or explore it with you.",
   "icons": {
+    "16": "icon16.png",
     "48": "icon48.png",
     "128": "icon128.png"
   },
@@ -17,6 +18,10 @@
   "background": {
     "service_worker": "background.js"
   },
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  },
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
@@ -27,7 +32,7 @@
   ],
   "web_accessible_resources": [
     {
-      "resources": ["icon48.png", "icon128.png"],
+      "resources": ["icon16.png", "icon48.png", "icon128.png"],
       "matches": ["<all_urls>"]
     }
   ]

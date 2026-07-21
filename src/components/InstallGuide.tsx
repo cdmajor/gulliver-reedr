@@ -155,6 +155,9 @@ function StepLoadFirefox() {
           <span className="font-mono text-[#a78bfa]">about:debugging#/runtime/this-firefox</span>{' '}
           and press Enter.
         </p>
+        <p className="text-[#c4a35a] text-xs leading-relaxed bg-[#2a2208] border border-[#5c4a1a] rounded-lg px-3 py-2">
+          Note: Firefox temporary add-ons are removed when you quit Firefox. Re-load the folder after restarting, or use Chrome/Edge for a persistent install.
+        </p>
       </div>
 
       <div className="bg-[#0d0d1e] border border-[#2a2a4a] rounded-xl overflow-hidden">

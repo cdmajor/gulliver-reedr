@@ -172,10 +172,14 @@
 
   // ── Shadow DOM ────────────────────────────────────────────────────────────────
   function createUI() {
+    // Some document types (blank/PDF shells) may not have a body yet.
+    const mountParent = document.body || document.documentElement;
+    if (!mountParent) return;
+
     const host = document.createElement("div");
     host.id = "victor-companion-root";
     host.style.cssText = "position:fixed;bottom:24px;right:24px;z-index:2147483647;display:block;";
-    document.body.appendChild(host);
+    mountParent.appendChild(host);
 
     shadow = host.attachShadow({ mode: "open" });
 
@@ -465,25 +469,26 @@
   async function extractPdfText() {
     if (!isPdfPage || !apiUrl) return;
     try {
-      const endpoint = apiUrl.replace(/\/$/, "") + "/victor/extract-pdf";
-      const resp = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pdfUrl: window.location.href }),
+      const result = await new Promise((resolve) => {
+        browserAPI.runtime.sendMessage(
+          { type: "VICTOR_EXTRACT_PDF", payload: { pdfUrl: window.location.href } },
+          (response) => {
+            if (browserAPI.runtime.lastError) {
+              resolve({ error: browserAPI.runtime.lastError.message });
+              return;
+            }
+            resolve(response || { error: "No response" });
+          }
+        );
       });
-      if (!resp.ok) { removePdfStatus(); return; }
-      const { text } = await resp.json();
-      if (text) {
-        pageContext.text = text.slice(0, 5000);
-        pageContext.title = document.title || "PDF Document";
-        isPdfReady = true;
-        removePdfStatus();
-        updatePageTitle();
-        // Rebuild chips to show PDF-specific prompts
-        buildPromptChips();
-      } else {
-        removePdfStatus();
-      }
+      if (result.error || !result.text) { removePdfStatus(); return; }
+      pageContext.text = String(result.text).slice(0, 5000);
+      pageContext.title = document.title || "PDF Document";
+      isPdfReady = true;
+      removePdfStatus();
+      updatePageTitle();
+      // Rebuild chips to show PDF-specific prompts
+      buildPromptChips();
     } catch {
       removePdfStatus();
     }
@@ -777,7 +782,7 @@
     container.scrollTop = container.scrollHeight;
   }
 
-  // ── Streaming API call ────────────────────────────────────────────────────────
+  // ── Streaming API call (via background service worker — bypasses page CORS) ──
   async function doApiCall(msgs) {
     if (!apiUrl) { showNoApiNotice(); return; }
     isLoading = true;
@@ -809,65 +814,62 @@
     container.scrollTop = container.scrollHeight;
 
     let accumulated = "";
+    let settled = false;
 
-    try {
-      const endpoint = apiUrl.replace(/\/$/, "") + "/victor/chat";
-      const resp = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: msgs, pageContext, stream: true }),
-      });
+    function finishOk() {
+      if (settled) return;
+      settled = true;
+      const finalContent = accumulated || "Sorry, I couldn't come up with a response.";
+      bubble.innerHTML = renderMarkdown(finalContent);
+      copyBtn.style.display = "";
+      copyBtn.addEventListener("click", () => copyText(finalContent, copyBtn));
+      messages.push({ role: "assistant", content: finalContent });
+      persistCurrentSession();
+      isLoading = false;
+      shadow.getElementById("v-send").disabled =
+        shadow.getElementById("v-input").value.trim() === "";
+      container.scrollTop = container.scrollHeight;
+    }
 
-      if (!resp.ok || !resp.body) throw new Error(`HTTP ${resp.status}`);
-
-      const reader  = resp.body.getReader();
-      const decoder = new TextDecoder();
-      let buf = "";
-
-      outer:
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
-        buf += decoder.decode(value, { stream: true });
-        const lines = buf.split("\n");
-        buf = lines.pop();
-
-        for (const line of lines) {
-          if (!line.startsWith("data: ")) continue;
-          const data = line.slice(6).trim();
-          if (data === "[DONE]") break outer;
-          try {
-            const { content } = JSON.parse(data);
-            if (content) {
-              accumulated += content;
-              bubble.innerHTML = renderMarkdown(accumulated) + '<span class="v-cursor"></span>';
-              container.scrollTop = container.scrollHeight;
-            }
-          } catch {}
-        }
-      }
-    } catch {
+    function finishErr() {
+      if (settled) return;
+      settled = true;
       row.remove();
       isLoading = false;
       shadow.getElementById("v-send").disabled =
         shadow.getElementById("v-input").value.trim() === "";
       showErrorWithRetry(msgs);
-      return;
     }
 
-    // Finalise
-    const finalContent = accumulated || "Sorry, I couldn't come up with a response.";
-    bubble.innerHTML = renderMarkdown(finalContent);
-    copyBtn.style.display = "";
-    copyBtn.addEventListener("click", () => copyText(finalContent, copyBtn));
-
-    messages.push({ role: "assistant", content: finalContent });
-    persistCurrentSession();
-
-    isLoading = false;
-    shadow.getElementById("v-send").disabled =
-      shadow.getElementById("v-input").value.trim() === "";
-    container.scrollTop = container.scrollHeight;
+    try {
+      const port = browserAPI.runtime.connect({ name: "victor-chat" });
+      port.onMessage.addListener((msg) => {
+        if (!msg || settled) return;
+        if (msg.type === "CHUNK" && msg.content) {
+          accumulated += msg.content;
+          bubble.innerHTML = renderMarkdown(accumulated) + '<span class="v-cursor"></span>';
+          container.scrollTop = container.scrollHeight;
+        } else if (msg.type === "DONE") {
+          try { port.disconnect(); } catch (_) {}
+          finishOk();
+        } else if (msg.type === "ERROR") {
+          try { port.disconnect(); } catch (_) {}
+          finishErr();
+        }
+      });
+      port.onDisconnect.addListener(() => {
+        if (settled) return;
+        // If the worker died mid-stream but we already got text, keep it
+        if (accumulated) finishOk();
+        else finishErr();
+      });
+      port.postMessage({
+        type: "START",
+        payload: { messages: msgs, pageContext },
+      });
+    } catch {
+      finishErr();
+    }
   }
 
   async function sendMessageText(text) {
@@ -929,42 +931,62 @@
 
   // ── SPA navigation ────────────────────────────────────────────────────────────
   let lastUrl = location.href;
-  new MutationObserver(() => {
-    if (location.href !== lastUrl) {
-      persistCurrentSession();
-      lastUrl = location.href;
-      pageContext = getPageContext();
-      messages = [];
+  function onUrlMaybeChanged() {
+    if (location.href === lastUrl) return;
+    persistCurrentSession();
+    lastUrl = location.href;
+    pageContext = getPageContext();
+    messages = [];
+    isLoading = false;
 
-      currentSession = {
-        id: generateId(),
-        url: pageContext.url,
-        title: pageContext.title,
-        domain: getDomain(pageContext.url),
-        timestamp: Date.now(),
-        messages: []
-      };
+    currentSession = {
+      id: generateId(),
+      url: pageContext.url,
+      title: pageContext.title,
+      domain: getDomain(pageContext.url),
+      timestamp: Date.now(),
+      messages: []
+    };
 
-      updatePageTitle();
+    updatePageTitle();
 
-      if (shadow) {
-        const container = shadow.getElementById("v-messages");
-        if (container) container.innerHTML = "";
-        showPrompts();
-      }
+    if (shadow) {
+      const container = shadow.getElementById("v-messages");
+      if (container) container.innerHTML = "";
+      showPrompts();
+      const sendBtn = shadow.getElementById("v-send");
+      const input = shadow.getElementById("v-input");
+      if (sendBtn && input) sendBtn.disabled = input.value.trim() === "";
     }
-  }).observe(document.body, { childList: true, subtree: true });
+  }
+
+  if (document.body) {
+    new MutationObserver(onUrlMaybeChanged).observe(document.body, { childList: true, subtree: true });
+  }
+  // History API sites often don't mutate enough — also poll lightly
+  setInterval(onUrlMaybeChanged, 1200);
 
   window.addEventListener("beforeunload", () => persistCurrentSession());
 
   // ── Init ─────────────────────────────────────────────────────────────────────
   function start() {
-    browserAPI.runtime.sendMessage({ type: "VICTOR_GET_CONFIG" }, (response) => {
-      if (browserAPI.runtime.lastError) return;
-      apiUrl = response?.apiUrl || "";
+    const boot = (url) => {
+      apiUrl = url || "";
       createUI();
       if (isPdfPage) extractPdfText();
-    });
+    };
+
+    try {
+      browserAPI.runtime.sendMessage({ type: "VICTOR_GET_CONFIG" }, (response) => {
+        if (browserAPI.runtime.lastError) {
+          boot("");
+          return;
+        }
+        boot(response?.apiUrl || "");
+      });
+    } catch (_) {
+      boot("");
+    }
   }
 
   if (document.readyState === "loading") {
