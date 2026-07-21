@@ -1,13 +1,25 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Layout } from '@/components/Layout';
-import { SiApple } from 'react-icons/si';
-import { InstallModal } from '@/components/InstallGuide';
-
+import { InstallModal, detectBrowser } from '@/components/InstallGuide';
 import heroImage from '@/assets/hero-notebook.png';
 
-function extensionDownloadUrl() {
-  return window.location.origin + '/api/victor/extension-download?origin=' + encodeURIComponent(window.location.origin);
+type Browser = 'chrome' | 'edge' | 'firefox';
+
+const BROWSER_LABELS: Record<Browser, { icon: string; name: string; cta: string }> = {
+  chrome: { icon: '🟡', name: 'Chrome', cta: 'Download for Chrome' },
+  edge:   { icon: '🔵', name: 'Edge',   cta: 'Download for Edge' },
+  firefox:{ icon: '🦊', name: 'Firefox',cta: 'Download for Firefox' },
+};
+
+function extensionDownloadUrl(browser: Browser) {
+  return (
+    window.location.origin +
+    '/api/victor/extension-download?origin=' +
+    encodeURIComponent(window.location.origin) +
+    '&browser=' +
+    browser
+  );
 }
 
 const fadeUp = {
@@ -63,14 +75,18 @@ const features = [
 
 export default function Home() {
   const [installOpen, setInstallOpen] = useState(false);
+  const [browser, setBrowser] = useState<Browser>('chrome');
 
-  function handleDownload() {
-    // Trigger the file download
+  useEffect(() => {
+    setBrowser(detectBrowser());
+  }, []);
+
+  function handleDownload(b: Browser = browser) {
     const a = document.createElement('a');
-    a.href = extensionDownloadUrl();
+    a.href = extensionDownloadUrl(b);
     a.download = 'victor-extension.zip';
     a.click();
-    // Open the install guide immediately after
+    setBrowser(b);
     setInstallOpen(true);
   }
 
@@ -112,8 +128,8 @@ export default function Home() {
                 href="#download"
                 className="bg-primary text-primary-foreground px-8 py-4 flex items-center justify-center gap-3 rounded-full hover:bg-primary/80 transition-colors duration-300 w-full sm:w-auto font-medium"
               >
-                <SiApple className="w-5 h-5" />
-                <span className="tracking-wide">Download on App Store</span>
+                <span>{BROWSER_LABELS[browser].icon}</span>
+                <span className="tracking-wide">{BROWSER_LABELS[browser].cta}</span>
               </a>
             </motion.div>
           </motion.div>
@@ -312,7 +328,7 @@ export default function Home() {
               <div className="flex flex-col gap-4">
                 <div className="flex items-center gap-3">
                   <span className="w-8 h-[1px] bg-accent"></span>
-                  <span className="text-accent tracking-widest uppercase text-xs font-semibold">Chrome Extension</span>
+                  <span className="text-accent tracking-widest uppercase text-xs font-semibold">Browser Extension</span>
                 </div>
                 <h2 className="text-4xl md:text-5xl font-serif leading-tight text-foreground">
                   Victor rides along<br />
@@ -323,13 +339,30 @@ export default function Home() {
                 </p>
               </div>
 
-              {/* Big download button */}
+              {/* Browser picker */}
+              <div className="flex gap-2 flex-wrap">
+                {(['chrome', 'edge', 'firefox'] as Browser[]).map((b) => (
+                  <button
+                    key={b}
+                    onClick={() => setBrowser(b)}
+                    className={`text-sm px-4 py-2 rounded-full border transition-colors ${
+                      browser === b
+                        ? 'border-accent bg-accent/10 text-accent font-medium'
+                        : 'border-border text-muted-foreground hover:border-accent/40'
+                    }`}
+                  >
+                    {BROWSER_LABELS[b].icon} {BROWSER_LABELS[b].name}
+                  </button>
+                ))}
+              </div>
+
+              {/* Download button */}
               <button
-                onClick={handleDownload}
+                onClick={() => handleDownload(browser)}
                 className="inline-flex items-center justify-center gap-3 bg-primary text-primary-foreground px-8 py-5 rounded-2xl hover:bg-primary/80 transition-colors duration-300 font-medium text-lg w-full text-center"
               >
                 <span className="text-xl">⬇</span>
-                <span>Download for Chrome</span>
+                <span>{BROWSER_LABELS[browser].cta}</span>
                 <span className="text-sm opacity-60 font-normal">— free</span>
               </button>
 
@@ -399,19 +432,35 @@ export default function Home() {
             The sooner you meet Victor, the sooner he starts learning you.
           </p>
 
-          <a
-            href="#"
-            className="mt-4 bg-primary text-primary-foreground px-10 py-5 flex items-center justify-center gap-4 rounded-full hover:bg-primary/80 transition-colors duration-300 w-full sm:w-auto"
+          {/* Browser picker */}
+          <div className="flex gap-3 flex-wrap justify-center">
+            {(['chrome', 'edge', 'firefox'] as Browser[]).map((b) => (
+              <button
+                key={b}
+                onClick={() => setBrowser(b)}
+                className={`text-sm px-4 py-2 rounded-full border transition-colors ${
+                  browser === b
+                    ? 'border-accent bg-accent/10 text-accent font-medium'
+                    : 'border-border text-muted-foreground hover:border-accent/40'
+                }`}
+              >
+                {BROWSER_LABELS[b].icon} {BROWSER_LABELS[b].name}
+              </button>
+            ))}
+          </div>
+
+          <button
+            onClick={() => handleDownload(browser)}
+            className="mt-2 bg-primary text-primary-foreground px-10 py-5 inline-flex items-center justify-center gap-3 rounded-full hover:bg-primary/80 transition-colors duration-300 w-full sm:w-auto font-medium text-lg"
           >
-            <SiApple className="w-6 h-6" />
-            <div className="flex flex-col items-start">
-              <span className="text-xs uppercase tracking-widest font-semibold opacity-70 leading-none mb-1">Download on the</span>
-              <span className="font-medium tracking-wide leading-none text-lg">App Store</span>
-            </div>
-          </a>
+            <span>⬇</span>
+            <span>{BROWSER_LABELS[browser].cta}</span>
+            <span className="text-sm opacity-60 font-normal">— free</span>
+          </button>
 
           <p className="text-xs text-muted-foreground/60 max-w-sm leading-relaxed">
-            Free to download. Requires iOS 16 or later. By downloading you agree to our{' '}
+            Free to install. Works on Chrome, Edge, and Firefox.{' '}
+            By downloading you agree to our{' '}
             <a href="/terms" className="underline hover:text-muted-foreground transition-colors">Terms of Use</a>
             {' '}and{' '}
             <a href="/privacy" className="underline hover:text-muted-foreground transition-colors">Privacy Policy</a>.
@@ -419,7 +468,7 @@ export default function Home() {
         </div>
       </section>
 
-      {installOpen && <InstallModal onClose={() => setInstallOpen(false)} />}
+      {installOpen && <InstallModal onClose={() => setInstallOpen(false)} initialBrowser={browser} />}
     </Layout>
   );
 }

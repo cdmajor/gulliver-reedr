@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { createPortal } from 'react-dom';
 
 type OS = 'mac' | 'windows' | 'linux';
+type Browser = 'chrome' | 'edge' | 'firefox';
 
 function detectOS(): OS {
   const ua = navigator.userAgent;
@@ -11,7 +12,20 @@ function detectOS(): OS {
   return 'linux';
 }
 
-// ── Step content ─────────────────────────────────────────────────────────────
+export function detectBrowser(): Browser {
+  const ua = navigator.userAgent;
+  if (ua.includes('Edg/')) return 'edge';
+  if (ua.includes('Firefox/')) return 'firefox';
+  return 'chrome';
+}
+
+const BROWSER_LABELS: Record<Browser, string> = {
+  chrome: '🟡 Chrome',
+  edge: '🔵 Edge',
+  firefox: '🦊 Firefox',
+};
+
+// ── Step 1: Download & unzip (same for all browsers) ─────────────────────────
 
 function StepUnzip({ os }: { os: OS }) {
   return (
@@ -25,7 +39,6 @@ function StepUnzip({ os }: { os: OS }) {
         </p>
       </div>
 
-      {/* Visual: download bar + unzip */}
       <div className="flex flex-col gap-3">
         <div className="bg-[#0d0d1e] border border-[#2a2a4a] rounded-xl p-3 flex items-center gap-3">
           <div className="w-9 h-9 bg-[#6d5ffa]/20 border border-[#6d5ffa]/40 rounded-lg flex items-center justify-center text-[#a78bfa] text-xs font-bold flex-shrink-0">zip</div>
@@ -66,34 +79,33 @@ function StepUnzip({ os }: { os: OS }) {
   );
 }
 
-function StepLoadUnpacked() {
+// ── Step 2: Open extensions page (browser-specific) ───────────────────────────
+
+function StepLoadChrome({ browser }: { browser: 'chrome' | 'edge' }) {
+  const scheme = browser === 'edge' ? 'edge://extensions' : 'chrome://extensions';
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-col gap-2">
-        <p className="text-white font-semibold">Open Chrome's extension page.</p>
+        <p className="text-white font-semibold">Open the extensions page.</p>
         <p className="text-[#9090b8] text-sm leading-relaxed">
           In a new tab, type{' '}
-          <span className="font-mono text-[#a78bfa]">chrome://extensions</span>{' '}
+          <span className="font-mono text-[#a78bfa]">{scheme}</span>{' '}
           and press Enter. Then follow these two steps:
         </p>
       </div>
 
-      {/* Chrome extensions UI mock */}
       <div className="bg-[#0d0d1e] border border-[#2a2a4a] rounded-xl overflow-hidden">
-        {/* Address bar */}
         <div className="bg-[#181830] px-3 py-2 flex items-center gap-2 border-b border-[#2a2a4a]">
           <div className="flex gap-1">
             <div className="w-2.5 h-2.5 rounded-full bg-[#ff5f57]" />
             <div className="w-2.5 h-2.5 rounded-full bg-[#febc2e]" />
             <div className="w-2.5 h-2.5 rounded-full bg-[#28c840]" />
           </div>
-          <div className="flex-1 bg-[#0a0a18] rounded px-2.5 py-1 text-[#a78bfa] text-xs font-mono">chrome://extensions</div>
+          <div className="flex-1 bg-[#0a0a18] rounded px-2.5 py-1 text-[#a78bfa] text-xs font-mono">{scheme}</div>
         </div>
-        {/* Page content */}
         <div className="p-4 flex flex-col gap-4">
           <div className="flex items-center justify-between">
             <p className="text-white text-sm font-semibold">Extensions</p>
-            {/* Step A: Developer mode */}
             <div className="flex flex-col items-end gap-1">
               <div className="flex items-center gap-1.5 text-[#a78bfa] text-xs font-medium">
                 <span className="w-4 h-4 rounded-full bg-[#6d5ffa] text-white text-[9px] flex items-center justify-center font-bold flex-shrink-0">A</span>
@@ -112,7 +124,6 @@ function StepLoadUnpacked() {
             </div>
           </div>
           <div className="flex gap-2 flex-wrap">
-            {/* Step B: Load unpacked */}
             <div className="flex flex-col gap-1">
               <div className="flex items-center gap-1 text-[#a78bfa] text-xs font-medium">
                 <span className="w-4 h-4 rounded-full bg-[#6d5ffa] text-white text-[9px] flex items-center justify-center font-bold flex-shrink-0">B</span>
@@ -134,7 +145,51 @@ function StepLoadUnpacked() {
   );
 }
 
-function StepSelectFolder() {
+function StepLoadFirefox() {
+  return (
+    <div className="flex flex-col gap-5">
+      <div className="flex flex-col gap-2">
+        <p className="text-white font-semibold">Open Firefox's debugging page.</p>
+        <p className="text-[#9090b8] text-sm leading-relaxed">
+          In a new tab, type{' '}
+          <span className="font-mono text-[#a78bfa]">about:debugging#/runtime/this-firefox</span>{' '}
+          and press Enter.
+        </p>
+      </div>
+
+      <div className="bg-[#0d0d1e] border border-[#2a2a4a] rounded-xl overflow-hidden">
+        <div className="bg-[#181830] px-3 py-2 flex items-center gap-2 border-b border-[#2a2a4a]">
+          <div className="flex gap-1">
+            <div className="w-2.5 h-2.5 rounded-full bg-[#ff5f57]" />
+            <div className="w-2.5 h-2.5 rounded-full bg-[#febc2e]" />
+            <div className="w-2.5 h-2.5 rounded-full bg-[#28c840]" />
+          </div>
+          <div className="flex-1 bg-[#0a0a18] rounded px-2.5 py-1 text-[#a78bfa] text-xs font-mono">about:debugging#/runtime/this-firefox</div>
+        </div>
+        <div className="p-4 flex flex-col gap-4">
+          <p className="text-white text-sm font-semibold">This Firefox</p>
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-1.5 text-[#a78bfa] text-xs font-medium mb-1">
+              <span className="w-4 h-4 rounded-full bg-[#6d5ffa] text-white text-[9px] flex items-center justify-center font-bold flex-shrink-0">A</span>
+              Click this button
+            </div>
+            <motion.div
+              animate={{ boxShadow: ['0 0 0 0 rgba(109,95,250,0)', '0 0 0 5px rgba(109,95,250,0.5)', '0 0 0 0 rgba(109,95,250,0)'] }}
+              transition={{ duration: 1.8, repeat: Infinity }}
+              className="bg-[#6d5ffa] text-white text-xs px-4 py-2 rounded-lg font-medium cursor-pointer self-start"
+            >
+              Load Temporary Add-on…
+            </motion.div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Step 3: Select the folder / file ─────────────────────────────────────────
+
+function StepSelectChrome() {
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-col gap-2">
@@ -146,7 +201,6 @@ function StepSelectFolder() {
         </p>
       </div>
 
-      {/* Folder picker mock */}
       <div className="bg-[#0d0d1e] border border-[#2a2a4a] rounded-xl overflow-hidden">
         <div className="bg-[#181830] px-4 py-2.5 flex items-center justify-between border-b border-[#2a2a4a]">
           <p className="text-white text-xs font-medium">Select Extension Directory</p>
@@ -163,7 +217,6 @@ function StepSelectFolder() {
               {f.open && <span className="text-[#6060a0] text-xs">▼</span>}
             </div>
           ))}
-          {/* The target folder */}
           <motion.div
             animate={{ boxShadow: ['0 0 0 0 rgba(109,95,250,0)', '0 0 0 4px rgba(109,95,250,0.45)', '0 0 0 0 rgba(109,95,250,0)'] }}
             transition={{ duration: 1.8, repeat: Infinity, delay: 0.3 }}
@@ -173,29 +226,79 @@ function StepSelectFolder() {
             <span className="text-white text-xs font-semibold flex-1">victor-extension</span>
             <span className="text-[#a78bfa] text-xs font-semibold">Select Folder</span>
           </motion.div>
-          <div className={`flex items-center gap-3 px-3 py-2 rounded-lg`}>
+          <div className="flex items-center gap-3 px-3 py-2 rounded-lg">
             <span className="text-base">🖥️</span>
-            <span className={`text-xs flex-1 text-[#6060a0]`}>Desktop</span>
+            <span className="text-xs flex-1 text-[#6060a0]">Desktop</span>
           </div>
         </div>
       </div>
 
-      {/* Done */}
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4, duration: 0.5 }}
-        className="bg-[#0d2218] border border-[#28c840]/30 rounded-xl p-4 flex items-center gap-4"
-      >
-        <span className="text-2xl flex-shrink-0">✅</span>
-        <div>
-          <p className="text-[#28c840] font-semibold text-sm">Victor is installed</p>
-          <p className="text-[#6060a0] text-xs leading-relaxed mt-0.5">
-            He'll appear on every page as a <strong className="text-white">V</strong> button in the bottom-right corner. Click it to start talking.
-          </p>
-        </div>
-      </motion.div>
+      <DoneCard />
     </div>
+  );
+}
+
+function StepSelectFirefox() {
+  return (
+    <div className="flex flex-col gap-5">
+      <div className="flex flex-col gap-2">
+        <p className="text-white font-semibold">Select manifest.json inside the folder.</p>
+        <p className="text-[#9090b8] text-sm leading-relaxed">
+          A file picker will open. Navigate to your <strong className="text-white">Downloads</strong> folder,
+          open <span className="font-mono text-[#a78bfa]">victor-extension</span>, and select{' '}
+          <span className="font-mono text-[#a78bfa]">manifest.json</span> inside it.
+        </p>
+      </div>
+
+      <div className="bg-[#0d0d1e] border border-[#2a2a4a] rounded-xl overflow-hidden">
+        <div className="bg-[#181830] px-4 py-2.5 flex items-center justify-between border-b border-[#2a2a4a]">
+          <p className="text-white text-xs font-medium">Open</p>
+          <span className="text-[#6060a0] text-sm">×</span>
+        </div>
+        <div className="p-2 flex flex-col gap-0.5">
+          <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-[#1a1a38]">
+            <span className="text-base">⬇️</span>
+            <span className="text-white text-xs flex-1">Downloads</span>
+            <span className="text-[#6060a0] text-xs">▼</span>
+          </div>
+          <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-[#1a1a38] ml-4">
+            <span className="text-base">📁</span>
+            <span className="text-white text-xs flex-1">victor-extension</span>
+            <span className="text-[#6060a0] text-xs">▼</span>
+          </div>
+          <motion.div
+            animate={{ boxShadow: ['0 0 0 0 rgba(109,95,250,0)', '0 0 0 4px rgba(109,95,250,0.45)', '0 0 0 0 rgba(109,95,250,0)'] }}
+            transition={{ duration: 1.8, repeat: Infinity, delay: 0.3 }}
+            className="flex items-center gap-3 px-3 py-2.5 ml-8 mx-1 rounded-lg bg-[#6d5ffa]/20 border border-[#6d5ffa]/50"
+          >
+            <span className="text-base">📄</span>
+            <span className="text-white text-xs font-semibold flex-1">manifest.json</span>
+            <span className="text-[#a78bfa] text-xs font-semibold">Open</span>
+          </motion.div>
+        </div>
+      </div>
+
+      <DoneCard />
+    </div>
+  );
+}
+
+function DoneCard() {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.4, duration: 0.5 }}
+      className="bg-[#0d2218] border border-[#28c840]/30 rounded-xl p-4 flex items-center gap-4"
+    >
+      <span className="text-2xl flex-shrink-0">✅</span>
+      <div>
+        <p className="text-[#28c840] font-semibold text-sm">Victor is installed</p>
+        <p className="text-[#6060a0] text-xs leading-relaxed mt-0.5">
+          He'll appear on every page as a <strong className="text-white">V</strong> button in the bottom-right corner. Click it to start talking.
+        </p>
+      </div>
+    </motion.div>
   );
 }
 
@@ -203,24 +306,31 @@ function StepSelectFolder() {
 
 const STEPS = [
   { label: 'Download & unzip' },
-  { label: 'Load in Chrome' },
-  { label: 'Select the folder' },
+  { label: 'Open extensions' },
+  { label: 'Select & confirm' },
 ];
 
 interface InstallModalProps {
   onClose: () => void;
+  initialBrowser?: Browser;
 }
 
-export function InstallModal({ onClose }: InstallModalProps) {
+export function InstallModal({ onClose, initialBrowser }: InstallModalProps) {
   const [os, setOS] = useState<OS>('mac');
+  const [browser, setBrowser] = useState<Browser>(initialBrowser ?? 'chrome');
   const [step, setStep] = useState(0);
 
   useEffect(() => {
     setOS(detectOS());
-    // Lock body scroll
+    if (!initialBrowser) setBrowser(detectBrowser());
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = ''; };
-  }, []);
+  }, [initialBrowser]);
+
+  useEffect(() => {
+    // Reset to first step when browser changes
+    setStep(0);
+  }, [browser]);
 
   // Close on Escape
   useEffect(() => {
@@ -229,11 +339,17 @@ export function InstallModal({ onClose }: InstallModalProps) {
     return () => window.removeEventListener('keydown', handler);
   }, [onClose]);
 
-  const stepContent = [
-    <StepUnzip key="unzip" os={os} />,
-    <StepLoadUnpacked key="load" />,
-    <StepSelectFolder key="select" />,
-  ];
+  const stepContent = browser === 'firefox'
+    ? [
+        <StepUnzip key="unzip" os={os} />,
+        <StepLoadFirefox key="load" />,
+        <StepSelectFirefox key="select" />,
+      ]
+    : [
+        <StepUnzip key="unzip" os={os} />,
+        <StepLoadChrome key="load" browser={browser as 'chrome' | 'edge'} />,
+        <StepSelectChrome key="select" />,
+      ];
 
   const isLast = step === STEPS.length - 1;
 
@@ -277,21 +393,40 @@ export function InstallModal({ onClose }: InstallModalProps) {
             </button>
           </div>
 
-          {/* OS picker */}
-          <div className="flex items-center gap-2 px-6 pt-4">
-            {(['mac', 'windows', 'linux'] as OS[]).map((o) => (
-              <button
-                key={o}
-                onClick={() => setOS(o)}
-                className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
-                  os === o
-                    ? 'border-[#6d5ffa] bg-[#6d5ffa]/20 text-[#a78bfa]'
-                    : 'border-[#2a2a4a] text-[#6060a0] hover:border-[#6d5ffa]/40'
-                }`}
-              >
-                {o === 'mac' ? '🍎 Mac' : o === 'windows' ? '🪟 Windows' : '🐧 Linux'}
-              </button>
-            ))}
+          {/* Browser + OS pickers */}
+          <div className="flex flex-col gap-3 px-6 pt-4">
+            {/* Browser */}
+            <div className="flex items-center gap-2">
+              {(['chrome', 'edge', 'firefox'] as Browser[]).map((b) => (
+                <button
+                  key={b}
+                  onClick={() => setBrowser(b)}
+                  className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
+                    browser === b
+                      ? 'border-[#6d5ffa] bg-[#6d5ffa]/20 text-[#a78bfa]'
+                      : 'border-[#2a2a4a] text-[#6060a0] hover:border-[#6d5ffa]/40'
+                  }`}
+                >
+                  {BROWSER_LABELS[b]}
+                </button>
+              ))}
+            </div>
+            {/* OS */}
+            <div className="flex items-center gap-2">
+              {(['mac', 'windows', 'linux'] as OS[]).map((o) => (
+                <button
+                  key={o}
+                  onClick={() => setOS(o)}
+                  className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
+                    os === o
+                      ? 'border-[#6d5ffa] bg-[#6d5ffa]/20 text-[#a78bfa]'
+                      : 'border-[#2a2a4a] text-[#6060a0] hover:border-[#6d5ffa]/40'
+                  }`}
+                >
+                  {o === 'mac' ? '🍎 Mac' : o === 'windows' ? '🪟 Windows' : '🐧 Linux'}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Step progress dots */}
@@ -327,7 +462,7 @@ export function InstallModal({ onClose }: InstallModalProps) {
           <div className="px-6 py-5 flex-1 overflow-y-auto max-h-[55vh]">
             <AnimatePresence mode="wait">
               <motion.div
-                key={step}
+                key={`${browser}-${step}`}
                 initial={{ opacity: 0, x: 16 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -16 }}
