@@ -12,7 +12,13 @@
     // Extract visible text, trim aggressively
     const raw = document.body ? document.body.innerText : "";
     const text = raw.replace(/\s+/g, " ").trim().slice(0, 5000);
-    return { title, url, text };
+    // Detect page language from HTML lang attribute or browser default
+    const lang =
+      document.documentElement.lang ||
+      document.documentElement.getAttribute("xml:lang") ||
+      navigator.language ||
+      "";
+    return { title, url, text, lang };
   }
 
   // ── State ───────────────────────────────────────────────────────────────────
