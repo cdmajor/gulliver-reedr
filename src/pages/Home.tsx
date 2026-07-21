@@ -1,7 +1,8 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Layout } from '@/components/Layout';
 import { SiApple } from 'react-icons/si';
-import { InstallGuide } from '@/components/InstallGuide';
+import { InstallModal } from '@/components/InstallGuide';
 
 import heroImage from '@/assets/hero-notebook.png';
 
@@ -61,6 +62,18 @@ const features = [
 ];
 
 export default function Home() {
+  const [installOpen, setInstallOpen] = useState(false);
+
+  function handleDownload() {
+    // Trigger the file download
+    const a = document.createElement('a');
+    a.href = extensionDownloadUrl();
+    a.download = 'victor-extension.zip';
+    a.click();
+    // Open the install guide immediately after
+    setInstallOpen(true);
+  }
+
   return (
     <Layout>
       {/* Hero */}
@@ -311,18 +324,18 @@ export default function Home() {
               </div>
 
               {/* Big download button */}
-              <a
-                href={extensionDownloadUrl()}
-                download="victor-extension.zip"
+              <button
+                onClick={handleDownload}
                 className="inline-flex items-center justify-center gap-3 bg-primary text-primary-foreground px-8 py-5 rounded-2xl hover:bg-primary/80 transition-colors duration-300 font-medium text-lg w-full text-center"
               >
                 <span className="text-xl">⬇</span>
                 <span>Download for Chrome</span>
                 <span className="text-sm opacity-60 font-normal">— free</span>
-              </a>
+              </button>
 
-              {/* Step-by-step visual install guide */}
-              <InstallGuide />
+              <p className="text-xs text-muted-foreground/50 text-center">
+                Install guide opens right after download
+              </p>
             </motion.div>
 
             {/* Right: mock chat preview */}
@@ -405,6 +418,8 @@ export default function Home() {
           </p>
         </div>
       </section>
+
+      {installOpen && <InstallModal onClose={() => setInstallOpen(false)} />}
     </Layout>
   );
 }

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { createPortal } from 'react-dom';
 
 type OS = 'mac' | 'windows' | 'linux';
 
@@ -10,293 +11,360 @@ function detectOS(): OS {
   return 'linux';
 }
 
-// ── Step illustrations ──────────────────────────────────────────────────────
+// ── Step content ─────────────────────────────────────────────────────────────
 
-function Step1Illustration({ os }: { os: OS }) {
+function StepUnzip({ os }: { os: OS }) {
   return (
-    <div className="flex flex-col gap-3">
-      {/* Browser download bar */}
-      <div className="rounded-xl overflow-hidden border border-[#2a2a4a] shadow-lg">
-        {/* Address bar */}
-        <div className="bg-[#1a1a32] px-4 py-2 flex items-center gap-3 border-b border-[#2a2a4a]">
-          <div className="flex gap-1.5">
-            <div className="w-3 h-3 rounded-full bg-[#ff5f57]" />
-            <div className="w-3 h-3 rounded-full bg-[#febc2e]" />
-            <div className="w-3 h-3 rounded-full bg-[#28c840]" />
-          </div>
-          <div className="flex-1 bg-[#0d0d22] rounded-md px-3 py-1 text-[#6060a0] text-xs font-mono">victor-web.replit.app</div>
-        </div>
-        {/* Download bar at bottom */}
-        <div className="bg-[#13132b] px-4 py-3 flex items-center justify-between border-t border-[#2a2a4a]">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-[#6d5ffa]/20 border border-[#6d5ffa]/40 rounded flex items-center justify-center text-[#a78bfa] text-xs">zip</div>
-            <div>
-              <p className="text-white text-xs font-medium">victor-extension.zip</p>
-              <p className="text-[#6060a0] text-xs">Done — 1.4 MB</p>
+    <div className="flex flex-col gap-5">
+      <div className="flex flex-col gap-2">
+        <p className="text-white font-semibold">Your file is downloading now.</p>
+        <p className="text-[#9090b8] text-sm leading-relaxed">
+          Once it lands, open your {os === 'mac' ? 'Downloads folder' : 'Downloads folder'} and double-click{' '}
+          <span className="font-mono text-[#a78bfa]">victor-extension.zip</span> to unzip it.
+          You'll get a folder called <span className="font-mono text-[#a78bfa]">victor-extension</span>.
+        </p>
+      </div>
+
+      {/* Visual: download bar + unzip */}
+      <div className="flex flex-col gap-3">
+        <div className="bg-[#0d0d1e] border border-[#2a2a4a] rounded-xl p-3 flex items-center gap-3">
+          <div className="w-9 h-9 bg-[#6d5ffa]/20 border border-[#6d5ffa]/40 rounded-lg flex items-center justify-center text-[#a78bfa] text-xs font-bold flex-shrink-0">zip</div>
+          <div className="flex-1 min-w-0">
+            <p className="text-white text-sm font-medium">victor-extension.zip</p>
+            <div className="flex items-center gap-2 mt-1">
+              <div className="flex-1 h-1 bg-[#1a1a38] rounded-full overflow-hidden">
+                <motion.div
+                  className="h-full bg-[#6d5ffa] rounded-full"
+                  initial={{ width: '0%' }}
+                  animate={{ width: '100%' }}
+                  transition={{ duration: 1.2, ease: 'easeOut' }}
+                />
+              </div>
+              <span className="text-[#6060a0] text-xs flex-shrink-0">Done</span>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            {/* Highlighted: open folder / show in finder */}
-            <motion.div
-              animate={{ boxShadow: ['0 0 0 0 rgba(109,95,250,0)', '0 0 0 4px rgba(109,95,250,0.4)', '0 0 0 0 rgba(109,95,250,0)'] }}
-              transition={{ duration: 1.8, repeat: Infinity }}
-              className="bg-[#6d5ffa] text-white text-xs px-3 py-1.5 rounded-lg cursor-pointer font-medium"
-            >
-              {os === 'mac' ? 'Show in Finder' : 'Show in Explorer'}
-            </motion.div>
-          </div>
         </div>
-      </div>
 
-      {/* Arrow + folder view */}
-      <div className="flex items-start gap-3">
-        <div className="flex flex-col items-center pt-1">
-          <div className="w-px h-4 bg-[#6d5ffa]/40" />
-          <div className="text-[#6d5ffa] text-sm">↓</div>
+        <div className="flex items-center gap-3 px-1">
+          <div className="flex-1 h-px bg-[#2a2a4a]" />
+          <span className="text-[#6060a0] text-xs">double-click to unzip</span>
+          <div className="flex-1 h-px bg-[#2a2a4a]" />
         </div>
-        <div className="flex-1 bg-[#0d0d22] border border-[#2a2a4a] rounded-xl p-3 flex items-center gap-3">
-          <div className="text-2xl">📁</div>
+
+        <div className="bg-[#0d0d1e] border border-[#28c840]/30 rounded-xl p-3 flex items-center gap-3">
+          <span className="text-2xl flex-shrink-0">📁</span>
           <div>
-            <p className="text-white text-xs font-medium">victor-extension</p>
-            <p className="text-[#6060a0] text-xs">Unzip, then open this folder</p>
+            <p className="text-white text-sm font-medium">victor-extension</p>
+            <p className="text-[#6060a0] text-xs">Folder — ready to load</p>
+          </div>
+          <div className="ml-auto w-5 h-5 rounded-full bg-[#28c840]/20 border border-[#28c840]/50 flex items-center justify-center flex-shrink-0">
+            <span className="text-[#28c840] text-xs">✓</span>
           </div>
         </div>
       </div>
-
-      <p className="text-[#6060a0] text-xs leading-relaxed">
-        {os === 'mac'
-          ? 'Double-click the .zip to unzip it. A folder called victor-extension will appear.'
-          : 'Right-click the .zip → Extract All. You\'ll get a folder called victor-extension.'}
-      </p>
     </div>
   );
 }
 
-function Step2Illustration() {
+function StepLoadUnpacked() {
   return (
-    <div className="flex flex-col gap-3">
-      {/* Chrome extensions page mock */}
-      <div className="rounded-xl overflow-hidden border border-[#2a2a4a] shadow-lg">
-        <div className="bg-[#1a1a32] px-4 py-2 flex items-center gap-3 border-b border-[#2a2a4a]">
-          <div className="flex gap-1.5">
-            <div className="w-3 h-3 rounded-full bg-[#ff5f57]" />
-            <div className="w-3 h-3 rounded-full bg-[#febc2e]" />
-            <div className="w-3 h-3 rounded-full bg-[#28c840]" />
+    <div className="flex flex-col gap-5">
+      <div className="flex flex-col gap-2">
+        <p className="text-white font-semibold">Open Chrome's extension page.</p>
+        <p className="text-[#9090b8] text-sm leading-relaxed">
+          In a new tab, type{' '}
+          <span className="font-mono text-[#a78bfa]">chrome://extensions</span>{' '}
+          and press Enter. Then follow these two steps:
+        </p>
+      </div>
+
+      {/* Chrome extensions UI mock */}
+      <div className="bg-[#0d0d1e] border border-[#2a2a4a] rounded-xl overflow-hidden">
+        {/* Address bar */}
+        <div className="bg-[#181830] px-3 py-2 flex items-center gap-2 border-b border-[#2a2a4a]">
+          <div className="flex gap-1">
+            <div className="w-2.5 h-2.5 rounded-full bg-[#ff5f57]" />
+            <div className="w-2.5 h-2.5 rounded-full bg-[#febc2e]" />
+            <div className="w-2.5 h-2.5 rounded-full bg-[#28c840]" />
           </div>
-          <div className="flex-1 bg-[#0d0d22] rounded-md px-3 py-1 text-[#a78bfa] text-xs font-mono">chrome://extensions</div>
+          <div className="flex-1 bg-[#0a0a18] rounded px-2.5 py-1 text-[#a78bfa] text-xs font-mono">chrome://extensions</div>
         </div>
-        <div className="bg-[#13132b] p-4 flex flex-col gap-4">
-          {/* Header row */}
+        {/* Page content */}
+        <div className="p-4 flex flex-col gap-4">
           <div className="flex items-center justify-between">
             <p className="text-white text-sm font-semibold">Extensions</p>
-            {/* Developer mode toggle — highlighted */}
-            <motion.div
-              animate={{ boxShadow: ['0 0 0 0 rgba(109,95,250,0)', '0 0 0 4px rgba(109,95,250,0.5)', '0 0 0 0 rgba(109,95,250,0)'] }}
-              transition={{ duration: 1.8, repeat: Infinity, delay: 0 }}
-              className="flex items-center gap-2 bg-[#1e1e40] border border-[#6d5ffa]/60 rounded-full px-3 py-1.5"
-            >
-              <p className="text-[#a78bfa] text-xs font-medium">Developer mode</p>
-              {/* Toggle on */}
-              <div className="w-8 h-4 bg-[#6d5ffa] rounded-full relative">
-                <div className="absolute right-0.5 top-0.5 w-3 h-3 bg-white rounded-full" />
+            {/* Step A: Developer mode */}
+            <div className="flex flex-col items-end gap-1">
+              <div className="flex items-center gap-1.5 text-[#a78bfa] text-xs font-medium">
+                <span className="w-4 h-4 rounded-full bg-[#6d5ffa] text-white text-[9px] flex items-center justify-center font-bold flex-shrink-0">A</span>
+                Turn this on
               </div>
-            </motion.div>
+              <motion.div
+                animate={{ boxShadow: ['0 0 0 0 rgba(109,95,250,0)', '0 0 0 5px rgba(109,95,250,0.5)', '0 0 0 0 rgba(109,95,250,0)'] }}
+                transition={{ duration: 1.8, repeat: Infinity }}
+                className="flex items-center gap-2 bg-[#1e1e40] border border-[#6d5ffa]/60 rounded-full px-2.5 py-1"
+              >
+                <span className="text-[#a78bfa] text-xs">Developer mode</span>
+                <div className="w-7 h-3.5 bg-[#6d5ffa] rounded-full relative flex-shrink-0">
+                  <div className="absolute right-0.5 top-0.5 w-2.5 h-2.5 bg-white rounded-full" />
+                </div>
+              </motion.div>
+            </div>
           </div>
-          {/* Action buttons */}
-          <div className="flex gap-2">
-            {/* Load unpacked — highlighted */}
-            <motion.div
-              animate={{ boxShadow: ['0 0 0 0 rgba(109,95,250,0)', '0 0 0 4px rgba(109,95,250,0.5)', '0 0 0 0 rgba(109,95,250,0)'] }}
-              transition={{ duration: 1.8, repeat: Infinity, delay: 0.6 }}
-              className="bg-[#6d5ffa] text-white text-xs px-4 py-2 rounded-lg font-medium cursor-pointer"
-            >
-              Load unpacked
-            </motion.div>
-            <div className="bg-[#1e1e40] text-[#6060a0] text-xs px-4 py-2 rounded-lg">Pack extension</div>
-            <div className="bg-[#1e1e40] text-[#6060a0] text-xs px-4 py-2 rounded-lg">Update</div>
+          <div className="flex gap-2 flex-wrap">
+            {/* Step B: Load unpacked */}
+            <div className="flex flex-col gap-1">
+              <div className="flex items-center gap-1 text-[#a78bfa] text-xs font-medium">
+                <span className="w-4 h-4 rounded-full bg-[#6d5ffa] text-white text-[9px] flex items-center justify-center font-bold flex-shrink-0">B</span>
+                Then click this
+              </div>
+              <motion.div
+                animate={{ boxShadow: ['0 0 0 0 rgba(109,95,250,0)', '0 0 0 5px rgba(109,95,250,0.5)', '0 0 0 0 rgba(109,95,250,0)'] }}
+                transition={{ duration: 1.8, repeat: Infinity, delay: 0.5 }}
+                className="bg-[#6d5ffa] text-white text-xs px-4 py-2 rounded-lg font-medium cursor-pointer"
+              >
+                Load unpacked
+              </motion.div>
+            </div>
+            <div className="bg-[#1e1e40] text-[#6060a0] text-xs px-3 py-2 rounded-lg self-end">Pack extension</div>
           </div>
         </div>
       </div>
-
-      <p className="text-[#6060a0] text-xs leading-relaxed">
-        Type <span className="font-mono text-[#a78bfa]">chrome://extensions</span> in your address bar. Turn on <strong className="text-white">Developer mode</strong> (top right), then click <strong className="text-white">Load unpacked</strong>.
-      </p>
     </div>
   );
 }
 
-function Step3Illustration() {
+function StepSelectFolder() {
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-5">
+      <div className="flex flex-col gap-2">
+        <p className="text-white font-semibold">Select the victor-extension folder.</p>
+        <p className="text-[#9090b8] text-sm leading-relaxed">
+          A file picker will open. Navigate to your <strong className="text-white">Downloads</strong> folder,
+          select <span className="font-mono text-[#a78bfa]">victor-extension</span>, and click{' '}
+          <strong className="text-white">Select Folder</strong>.
+        </p>
+      </div>
+
       {/* Folder picker mock */}
-      <div className="rounded-xl overflow-hidden border border-[#2a2a4a] shadow-lg">
-        <div className="bg-[#1a1a32] px-4 py-2.5 flex items-center justify-between border-b border-[#2a2a4a]">
+      <div className="bg-[#0d0d1e] border border-[#2a2a4a] rounded-xl overflow-hidden">
+        <div className="bg-[#181830] px-4 py-2.5 flex items-center justify-between border-b border-[#2a2a4a]">
           <p className="text-white text-xs font-medium">Select Extension Directory</p>
-          <div className="text-[#6060a0] text-xs">×</div>
+          <span className="text-[#6060a0] text-sm">×</span>
         </div>
-        <div className="bg-[#0d0d22] p-3 flex flex-col gap-1">
-          {['Documents', 'Downloads', 'Desktop'].map((folder, i) => (
-            <div key={folder} className={`flex items-center gap-3 px-3 py-2 rounded-lg ${i === 1 ? 'bg-[#1a1a38]' : ''}`}>
-              <span className="text-lg">{i === 0 ? '📄' : i === 1 ? '⬇️' : '🖥️'}</span>
-              <span className={`text-xs ${i === 1 ? 'text-white' : 'text-[#6060a0]'}`}>{folder}</span>
-              {i === 1 && <span className="text-[#6060a0] text-xs ml-auto">▶</span>}
+        <div className="p-2 flex flex-col gap-0.5">
+          {[
+            { icon: '📄', name: 'Documents', dim: true },
+            { icon: '⬇️', name: 'Downloads', dim: false, open: true },
+          ].map((f) => (
+            <div key={f.name} className={`flex items-center gap-3 px-3 py-2 rounded-lg ${f.open ? 'bg-[#1a1a38]' : ''}`}>
+              <span className="text-base">{f.icon}</span>
+              <span className={`text-xs flex-1 ${f.dim ? 'text-[#6060a0]' : 'text-white'}`}>{f.name}</span>
+              {f.open && <span className="text-[#6060a0] text-xs">▼</span>}
             </div>
           ))}
-          {/* The victor-extension folder — highlighted */}
+          {/* The target folder */}
           <motion.div
-            animate={{ boxShadow: ['0 0 0 0 rgba(109,95,250,0)', '0 0 0 3px rgba(109,95,250,0.5)', '0 0 0 0 rgba(109,95,250,0)'] }}
-            transition={{ duration: 1.8, repeat: Infinity, delay: 0.4 }}
-            className="flex items-center gap-3 px-3 py-2 rounded-lg bg-[#6d5ffa]/20 border border-[#6d5ffa]/50"
+            animate={{ boxShadow: ['0 0 0 0 rgba(109,95,250,0)', '0 0 0 4px rgba(109,95,250,0.45)', '0 0 0 0 rgba(109,95,250,0)'] }}
+            transition={{ duration: 1.8, repeat: Infinity, delay: 0.3 }}
+            className="flex items-center gap-3 px-3 py-2.5 mx-1 rounded-lg bg-[#6d5ffa]/20 border border-[#6d5ffa]/50"
           >
-            <span className="text-lg">📁</span>
-            <span className="text-white text-xs font-medium">victor-extension</span>
-            <span className="ml-auto text-[#a78bfa] text-xs font-semibold">Select Folder</span>
+            <span className="text-base">📁</span>
+            <span className="text-white text-xs font-semibold flex-1">victor-extension</span>
+            <span className="text-[#a78bfa] text-xs font-semibold">Select Folder</span>
           </motion.div>
+          <div className={`flex items-center gap-3 px-3 py-2 rounded-lg`}>
+            <span className="text-base">🖥️</span>
+            <span className={`text-xs flex-1 text-[#6060a0]`}>Desktop</span>
+          </div>
         </div>
       </div>
 
-      <p className="text-[#6060a0] text-xs leading-relaxed">
-        Navigate to your <strong className="text-white">Downloads</strong> folder, select the <strong className="text-white">victor-extension</strong> folder (not the zip), and click <strong className="text-white">Select Folder</strong>.
-      </p>
-
-      {/* Done state */}
-      <div className="bg-[#0d2218] border border-[#28c840]/30 rounded-xl p-3 flex items-center gap-3">
-        <span className="text-xl">✅</span>
+      {/* Done */}
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4, duration: 0.5 }}
+        className="bg-[#0d2218] border border-[#28c840]/30 rounded-xl p-4 flex items-center gap-4"
+      >
+        <span className="text-2xl flex-shrink-0">✅</span>
         <div>
-          <p className="text-[#28c840] text-xs font-semibold">Victor is installed</p>
-          <p className="text-[#6060a0] text-xs">He'll appear on every page from now on.</p>
+          <p className="text-[#28c840] font-semibold text-sm">Victor is installed</p>
+          <p className="text-[#6060a0] text-xs leading-relaxed mt-0.5">
+            He'll appear on every page as a <strong className="text-white">V</strong> button in the bottom-right corner. Click it to start talking.
+          </p>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }
 
-// ── Main component ──────────────────────────────────────────────────────────
+// ── Modal ─────────────────────────────────────────────────────────────────────
 
 const STEPS = [
-  {
-    num: '1',
-    title: 'Download & unzip',
-    short: 'Click "Download for Chrome" above',
-  },
-  {
-    num: '2',
-    title: 'Open chrome://extensions',
-    short: 'Turn on Developer mode, click Load unpacked',
-  },
-  {
-    num: '3',
-    title: 'Select the folder',
-    short: 'Pick the victor-extension folder — done',
-  },
+  { label: 'Download & unzip' },
+  { label: 'Load in Chrome' },
+  { label: 'Select the folder' },
 ];
 
-export function InstallGuide() {
+interface InstallModalProps {
+  onClose: () => void;
+}
+
+export function InstallModal({ onClose }: InstallModalProps) {
   const [os, setOS] = useState<OS>('mac');
-  const [active, setActive] = useState(0);
+  const [step, setStep] = useState(0);
 
   useEffect(() => {
     setOS(detectOS());
+    // Lock body scroll
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = ''; };
   }, []);
 
-  const illustrations = [
-    <Step1Illustration key="1" os={os} />,
-    <Step2Illustration key="2" />,
-    <Step3Illustration key="3" />,
+  // Close on Escape
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [onClose]);
+
+  const stepContent = [
+    <StepUnzip key="unzip" os={os} />,
+    <StepLoadUnpacked key="load" />,
+    <StepSelectFolder key="select" />,
   ];
 
-  return (
-    <div className="flex flex-col gap-4">
-      {/* OS pill */}
-      <div className="flex items-center gap-2">
-        <span className="text-xs text-[#6060a0]">Instructions for</span>
-        <div className="flex gap-1">
-          {(['mac', 'windows', 'linux'] as OS[]).map((o) => (
-            <button
-              key={o}
-              onClick={() => setOS(o)}
-              className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
-                os === o
-                  ? 'border-[#6d5ffa] bg-[#6d5ffa]/20 text-[#a78bfa]'
-                  : 'border-[#2a2a4a] text-[#6060a0] hover:border-[#6d5ffa]/50'
-              }`}
-            >
-              {o === 'mac' ? '🍎 Mac' : o === 'windows' ? '🪟 Windows' : '🐧 Linux'}
-            </button>
-          ))}
-        </div>
-      </div>
+  const isLast = step === STEPS.length - 1;
 
-      {/* Step list */}
-      <div className="flex flex-col gap-2">
-        {STEPS.map((step, i) => {
-          const isActive = active === i;
-          const isDone = active > i;
-          return (
-            <div key={i} className="flex flex-col">
+  return createPortal(
+    <AnimatePresence>
+      {/* Backdrop */}
+      <motion.div
+        key="backdrop"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.2 }}
+        className="fixed inset-0 z-[9998] bg-black/70 backdrop-blur-sm"
+        onClick={onClose}
+      />
+
+      {/* Panel */}
+      <motion.div
+        key="panel"
+        initial={{ opacity: 0, y: 32, scale: 0.97 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 16, scale: 0.98 }}
+        transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+        className="fixed inset-0 z-[9999] flex items-center justify-center p-4 pointer-events-none"
+      >
+        <div
+          className="bg-[#13132b] border border-[#2a2a4a] rounded-2xl shadow-2xl w-full max-w-md pointer-events-auto flex flex-col overflow-hidden"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between px-6 py-4 border-b border-[#2a2a4a]">
+            <div className="flex items-center gap-3">
+              <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#6d5ffa] to-[#a78bfa] flex items-center justify-center text-white text-xs font-bold">V</div>
+              <span className="text-white font-semibold text-sm">Installing Victor</span>
+            </div>
+            <button
+              onClick={onClose}
+              className="w-7 h-7 rounded-full bg-[#1e1e40] hover:bg-[#2a2a50] text-[#6060a0] hover:text-white transition-colors flex items-center justify-center text-sm"
+            >
+              ×
+            </button>
+          </div>
+
+          {/* OS picker */}
+          <div className="flex items-center gap-2 px-6 pt-4">
+            {(['mac', 'windows', 'linux'] as OS[]).map((o) => (
               <button
-                onClick={() => setActive(i)}
-                className={`flex items-start gap-4 p-4 rounded-xl border text-left transition-all duration-300 ${
-                  isActive
-                    ? 'bg-[#6d5ffa]/10 border-[#6d5ffa]/50'
-                    : isDone
-                    ? 'bg-[#0d2218]/60 border-[#28c840]/20'
-                    : 'bg-[#0d0d22] border-[#2a2a4a] hover:border-[#2a2a4a]'
+                key={o}
+                onClick={() => setOS(o)}
+                className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
+                  os === o
+                    ? 'border-[#6d5ffa] bg-[#6d5ffa]/20 text-[#a78bfa]'
+                    : 'border-[#2a2a4a] text-[#6060a0] hover:border-[#6d5ffa]/40'
                 }`}
               >
-                {/* Number / checkmark */}
-                <span
-                  className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5 transition-colors ${
-                    isActive
-                      ? 'bg-[#6d5ffa] text-white'
-                      : isDone
-                      ? 'bg-[#28c840]/20 text-[#28c840] border border-[#28c840]/40'
-                      : 'bg-[#1a1a38] text-[#6060a0] border border-[#2a2a4a]'
-                  }`}
-                >
-                  {isDone ? '✓' : step.num}
-                </span>
-                <div className="flex-1 min-w-0">
-                  <p className={`text-sm font-semibold ${isActive ? 'text-white' : isDone ? 'text-[#6060a0]' : 'text-[#c0c0e0]'}`}>
-                    {step.title}
-                  </p>
-                  {!isActive && (
-                    <p className="text-xs text-[#6060a0] mt-0.5">{step.short}</p>
-                  )}
-                </div>
-                {/* Chevron */}
-                <span className={`text-[#6060a0] text-xs transition-transform ${isActive ? 'rotate-90' : ''}`}>▶</span>
+                {o === 'mac' ? '🍎 Mac' : o === 'windows' ? '🪟 Windows' : '🐧 Linux'}
               </button>
+            ))}
+          </div>
 
-              {/* Expanded illustration */}
-              <AnimatePresence>
-                {isActive && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-                    className="overflow-hidden"
-                  >
-                    <div className="pt-3 pb-2 px-1">
-                      {illustrations[i]}
-                    </div>
-                    {/* Next button */}
-                    {i < STEPS.length - 1 && (
-                      <button
-                        onClick={() => setActive(i + 1)}
-                        className="ml-11 mb-3 text-xs text-[#6d5ffa] hover:text-[#a78bfa] transition-colors font-medium flex items-center gap-1"
-                      >
-                        Next step →
-                      </button>
-                    )}
-                  </motion.div>
+          {/* Step progress dots */}
+          <div className="flex items-center gap-2 px-6 pt-4">
+            {STEPS.map((s, i) => (
+              <button
+                key={i}
+                onClick={() => setStep(i)}
+                className="flex items-center gap-2 group"
+              >
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
+                  i < step
+                    ? 'bg-[#28c840]/20 text-[#28c840] border border-[#28c840]/40'
+                    : i === step
+                    ? 'bg-[#6d5ffa] text-white'
+                    : 'bg-[#1e1e40] text-[#6060a0] border border-[#2a2a4a]'
+                }`}>
+                  {i < step ? '✓' : i + 1}
+                </div>
+                <span className={`text-xs hidden sm:block transition-colors ${
+                  i === step ? 'text-white font-medium' : 'text-[#6060a0]'
+                }`}>
+                  {s.label}
+                </span>
+                {i < STEPS.length - 1 && (
+                  <div className={`w-6 h-px transition-colors ${i < step ? 'bg-[#28c840]/40' : 'bg-[#2a2a4a]'}`} />
                 )}
-              </AnimatePresence>
-            </div>
-          );
-        })}
-      </div>
-    </div>
+              </button>
+            ))}
+          </div>
+
+          {/* Step content */}
+          <div className="px-6 py-5 flex-1 overflow-y-auto max-h-[55vh]">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={step}
+                initial={{ opacity: 0, x: 16 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -16 }}
+                transition={{ duration: 0.22, ease: 'easeOut' }}
+              >
+                {stepContent[step]}
+              </motion.div>
+            </AnimatePresence>
+          </div>
+
+          {/* Footer */}
+          <div className="px-6 pb-5 pt-2 border-t border-[#2a2a4a] flex items-center justify-between gap-3">
+            <button
+              onClick={() => step > 0 ? setStep(step - 1) : onClose()}
+              className="text-sm text-[#6060a0] hover:text-white transition-colors"
+            >
+              {step > 0 ? '← Back' : 'Close'}
+            </button>
+            {isLast ? (
+              <button
+                onClick={onClose}
+                className="bg-[#28c840] text-white text-sm px-6 py-2.5 rounded-xl font-medium hover:bg-[#22b036] transition-colors"
+              >
+                Done — go use Victor ✓
+              </button>
+            ) : (
+              <button
+                onClick={() => setStep(step + 1)}
+                className="bg-[#6d5ffa] text-white text-sm px-6 py-2.5 rounded-xl font-medium hover:bg-[#5a4de0] transition-colors"
+              >
+                Next →
+              </button>
+            )}
+          </div>
+        </div>
+      </motion.div>
+    </AnimatePresence>,
+    document.body
   );
 }
