@@ -73,12 +73,28 @@
   let isOpen = false;
   let isLoading = false;
   let messages = [];
+  let lastFailedMessages = null; // for retry
   let pageContext = getPageContext();
   let apiUrl = "";
   let shadow = null;
   let activeView = "chat"; // "chat" | "history"
-  let currentSession = { id: generateId(), url: pageContext.url, title: pageContext.title, domain: getDomain(pageContext.url), timestamp: Date.now(), messages: [] };
+  let currentSession = {
+    id: generateId(),
+    url: pageContext.url,
+    title: pageContext.title,
+    domain: getDomain(pageContext.url),
+    timestamp: Date.now(),
+    messages: []
+  };
   let expandedSessionId = null;
+
+  // ── Suggested prompts ────────────────────────────────────────────────────────
+  const SUGGESTED_PROMPTS = [
+    { icon: "📋", label: "Summarize this" },
+    { icon: "🔍", label: "What's the main argument?" },
+    { icon: "❓", label: "What should I know before reading?" },
+    { icon: "⚖️", label: "What's the counterargument?" },
+  ];
 
   // ── Shadow DOM setup ─────────────────────────────────────────────────────────
   function createUI() {
@@ -149,12 +165,7 @@
 
         /* ── Tabs ── */
         .v-tabs { display: flex; gap: 0; }
-        .v-tab {
-          flex: 1; padding: 8px 0; font-size: 12px; font-weight: 600; letter-spacing: 0.04em;
-          text-transform: uppercase; background: none; border: none; cursor: pointer;
-          color: #5050a0; border-bottom: 2px solid transparent;
-          transition: color 0.15s, border-color 0.15s;
-        }
+        .v-tab { flex: 1; padding: 8px 0; font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; background: none; border: none; cursor: pointer; color: #5050a0; border-bottom: 2px solid transparent; transition: color 0.15s, border-color 0.15s; }
         .v-tab.active { color: #a78bfa; border-bottom-color: #6d5ffa; }
         .v-tab:hover:not(.active) { color: #8080c0; }
 
@@ -168,9 +179,10 @@
         #v-messages::-webkit-scrollbar-track { background: transparent; }
         #v-messages::-webkit-scrollbar-thumb { background: #2a2a4a; border-radius: 2px; }
 
-        .v-msg { display: flex; gap: 8px; animation: v-fadein 0.2s ease; }
+        .v-msg { display: flex; gap: 8px; animation: v-fadein 0.2s ease; position: relative; }
         @keyframes v-fadein { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
         .v-msg.user { flex-direction: row-reverse; }
+
         .v-msg-avatar {
           width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
           background: linear-gradient(135deg, #6d5ffa, #a78bfa);
@@ -178,12 +190,35 @@
           font-size: 12px; font-weight: 800; color: #fff; margin-top: 2px;
         }
         .v-msg.user .v-msg-avatar { background: #2a2a4a; color: #a0a0c0; font-size: 13px; }
+
+        .v-msg-body { display: flex; flex-direction: column; gap: 4px; max-width: 78%; }
+        .v-msg.user .v-msg-body { align-items: flex-end; }
+
         .v-msg-bubble {
-          max-width: 78%; padding: 10px 14px; border-radius: 16px;
+          padding: 10px 14px; border-radius: 16px;
           font-size: 13.5px; line-height: 1.55; word-wrap: break-word;
         }
         .v-msg.assistant .v-msg-bubble { background: #1a1a38; color: #e0e0f8; border-bottom-left-radius: 4px; }
         .v-msg.user .v-msg-bubble { background: #6d5ffa; color: #fff; border-bottom-right-radius: 4px; }
+
+        /* ── Copy button ── */
+        .v-copy-btn {
+          display: flex; align-items: center; gap: 4px;
+          background: none; border: none; cursor: pointer;
+          color: #5050a0; font-size: 11px; padding: 2px 6px;
+          border-radius: 4px; transition: color 0.15s, background 0.15s;
+          align-self: flex-start; opacity: 0; transition: opacity 0.15s, color 0.15s, background 0.15s;
+        }
+        .v-msg:hover .v-copy-btn { opacity: 1; }
+        .v-copy-btn:hover { color: #a78bfa; background: #1a1a38; }
+        .v-copy-btn.copied { color: #22c55e; }
+        .v-copy-btn svg { display: block; }
+
+        /* ── Error + retry ── */
+        .v-error-row { display: flex; flex-direction: column; gap: 6px; }
+        .v-error-msg { font-size: 12.5px; color: #f87171; padding: 8px 12px; background: rgba(248,113,113,0.08); border: 1px solid rgba(248,113,113,0.2); border-radius: 12px; line-height: 1.5; }
+        .v-retry-btn { align-self: flex-start; display: flex; align-items: center; gap: 5px; background: none; border: 1px solid #3a3a5a; color: #a0a0c0; font-size: 11.5px; padding: 5px 10px; border-radius: 8px; cursor: pointer; transition: border-color 0.15s, color 0.15s, background 0.15s; }
+        .v-retry-btn:hover { border-color: #6d5ffa; color: #a78bfa; background: rgba(109,95,250,0.08); }
 
         /* ── Typing indicator ── */
         .v-typing { display: flex; align-items: center; gap: 4px; padding: 4px 2px; }
@@ -192,8 +227,28 @@
         .v-typing span:nth-child(3) { animation-delay: 0.4s; }
         @keyframes v-bounce { 0%, 80%, 100% { transform: translateY(0); opacity: 0.4; } 40% { transform: translateY(-5px); opacity: 1; } }
 
+        /* ── No-API notice ── */
         .v-notice { text-align: center; padding: 20px 16px; color: #5050a0; font-size: 13px; line-height: 1.6; }
         .v-notice a { color: #6d5ffa; text-decoration: underline; cursor: pointer; }
+
+        /* ── Suggested prompts ── */
+        #v-prompts {
+          padding: 12px 16px 8px;
+          display: flex; flex-direction: column; gap: 8px;
+          flex-shrink: 0;
+        }
+        .v-prompts-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: #5050a0; font-weight: 600; }
+        .v-prompts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+        .v-prompt-chip {
+          display: flex; align-items: center; gap: 6px;
+          background: #13132b; border: 1px solid #2a2a4a;
+          border-radius: 10px; padding: 8px 10px;
+          font-size: 12px; color: #c0c0e0; cursor: pointer;
+          transition: border-color 0.15s, background 0.15s, color 0.15s;
+          text-align: left;
+        }
+        .v-prompt-chip:hover { border-color: #6d5ffa; background: rgba(109,95,250,0.1); color: #e0e0f8; }
+        .v-prompt-chip .v-chip-icon { font-size: 14px; flex-shrink: 0; }
 
         /* ── Input area ── */
         #v-input-area {
@@ -221,60 +276,33 @@
         #v-send svg { display: block; }
 
         /* ── History view ── */
-        #v-history {
-          flex: 1; overflow-y: auto; padding: 0;
-          display: flex; flex-direction: column;
-        }
+        #v-history { flex: 1; overflow-y: auto; padding: 0; display: flex; flex-direction: column; }
         #v-history::-webkit-scrollbar { width: 4px; }
         #v-history::-webkit-scrollbar-track { background: transparent; }
         #v-history::-webkit-scrollbar-thumb { background: #2a2a4a; border-radius: 2px; }
 
-        .v-history-toolbar {
-          padding: 10px 16px; border-bottom: 1px solid #1a1a38;
-          display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
-        }
+        .v-history-toolbar { padding: 10px 16px; border-bottom: 1px solid #1a1a38; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
         .v-history-count { font-size: 11px; color: #5050a0; }
-        #v-clear-history {
-          font-size: 11px; color: #5050a0; background: none; border: none; cursor: pointer;
-          padding: 3px 8px; border-radius: 6px; transition: color 0.15s, background 0.15s;
-        }
+        #v-clear-history { font-size: 11px; color: #5050a0; background: none; border: none; cursor: pointer; padding: 3px 8px; border-radius: 6px; transition: color 0.15s, background 0.15s; }
         #v-clear-history:hover { color: #f87171; background: rgba(248,113,113,0.1); }
 
-        .v-history-empty {
-          flex: 1; display: flex; flex-direction: column; align-items: center;
-          justify-content: center; padding: 32px 20px; gap: 12px;
-          color: #5050a0; text-align: center;
-        }
+        .v-history-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 32px 20px; gap: 12px; color: #5050a0; text-align: center; }
         .v-history-empty .v-empty-icon { font-size: 32px; opacity: 0.4; }
         .v-history-empty p { font-size: 13px; line-height: 1.5; }
 
-        .v-session {
-          border-bottom: 1px solid #1a1a38; cursor: pointer;
-          transition: background 0.15s;
-        }
+        .v-session { border-bottom: 1px solid #1a1a38; cursor: pointer; transition: background 0.15s; }
         .v-session:hover { background: #13132b; }
         .v-session-header { padding: 12px 16px; display: flex; align-items: flex-start; gap: 10px; }
-        .v-session-icon {
-          width: 32px; height: 32px; border-radius: 8px; flex-shrink: 0;
-          background: #1a1a38; border: 1px solid #2a2a4a;
-          display: flex; align-items: center; justify-content: center;
-          font-size: 14px; margin-top: 1px;
-        }
+        .v-session-icon { width: 32px; height: 32px; border-radius: 8px; flex-shrink: 0; background: #1a1a38; border: 1px solid #2a2a4a; display: flex; align-items: center; justify-content: center; font-size: 14px; margin-top: 1px; }
         .v-session-info { flex: 1; min-width: 0; }
-        .v-session-title {
-          font-size: 13px; font-weight: 600; color: #d0d0f0;
-          white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-        }
+        .v-session-title { font-size: 13px; font-weight: 600; color: #d0d0f0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .v-session-meta { font-size: 11px; color: #5050a0; margin-top: 2px; display: flex; gap: 6px; align-items: center; }
         .v-session-dot { width: 3px; height: 3px; border-radius: 50%; background: #3a3a5a; flex-shrink: 0; }
         .v-session-chevron { font-size: 12px; color: #3a3a5a; flex-shrink: 0; margin-top: 6px; transition: transform 0.2s; }
         .v-session.expanded .v-session-chevron { transform: rotate(90deg); }
         .v-session-preview { font-size: 12px; color: #5050a0; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-        .v-session-messages {
-          padding: 0 16px 12px 58px;
-          display: none; flex-direction: column; gap: 8px;
-        }
+        .v-session-messages { padding: 0 16px 12px 58px; display: none; flex-direction: column; gap: 8px; }
         .v-session.expanded .v-session-messages { display: flex; }
         .v-mini-msg { font-size: 12px; line-height: 1.5; }
         .v-mini-msg.user { color: #a78bfa; }
@@ -314,6 +342,10 @@
         <!-- Chat view -->
         <div class="v-view" id="v-view-chat">
           <div id="v-messages"></div>
+          <div id="v-prompts">
+            <div class="v-prompts-label">Try asking</div>
+            <div class="v-prompts-grid" id="v-prompts-grid"></div>
+          </div>
           <div id="v-input-area">
             <textarea id="v-input" placeholder="Ask Victor anything about this page…" rows="1" aria-label="Message Victor"></textarea>
             <button id="v-send" aria-label="Send" disabled>
@@ -337,6 +369,7 @@
       </div>
     `;
 
+    buildPromptChips();
     bindEvents();
     updatePageTitle();
   }
@@ -347,6 +380,34 @@
     const hostname = getDomain(pageContext.url);
     el.textContent = hostname || "this page";
     el.title = pageContext.title;
+  }
+
+  // ── Prompt chips ─────────────────────────────────────────────────────────────
+  function buildPromptChips() {
+    const grid = shadow.getElementById("v-prompts-grid");
+    if (!grid) return;
+    grid.innerHTML = "";
+    SUGGESTED_PROMPTS.forEach(({ icon, label }) => {
+      const btn = document.createElement("button");
+      btn.className = "v-prompt-chip";
+      btn.innerHTML = `<span class="v-chip-icon">${icon}</span><span>${label}</span>`;
+      btn.addEventListener("click", () => {
+        if (isLoading) return;
+        hidePrompts();
+        sendMessageText(label);
+      });
+      grid.appendChild(btn);
+    });
+  }
+
+  function showPrompts() {
+    const el = shadow.getElementById("v-prompts");
+    if (el) el.style.display = "";
+  }
+
+  function hidePrompts() {
+    const el = shadow.getElementById("v-prompts");
+    if (el) el.style.display = "none";
   }
 
   // ── Tab switching ─────────────────────────────────────────────────────────────
@@ -392,7 +453,6 @@
         el.className = "v-session" + (isExpanded ? " expanded" : "");
         el.dataset.id = session.id;
 
-        // Truncate message content for display
         function truncate(str, n) { return str.length > n ? str.slice(0, n) + "…" : str; }
 
         el.innerHTML = `
@@ -405,7 +465,7 @@
                 <span class="v-session-dot"></span>
                 <span>${formatDate(session.timestamp)}</span>
                 <span class="v-session-dot"></span>
-                <span>${session.messages.filter(m=>m.role==="user").length} msg${session.messages.filter(m=>m.role==="user").length !== 1 ? "s" : ""}</span>
+                <span>${userMessages.length} msg${userMessages.length !== 1 ? "s" : ""}</span>
               </div>
               ${preview ? `<div class="v-session-preview">${escapeHtml(truncate(preview, 60))}</div>` : ""}
             </div>
@@ -481,8 +541,9 @@
     shadow.getElementById("v-btn").classList.remove("has-new");
     shadow.getElementById("v-panel").classList.add("open");
     if (activeView === "chat") shadow.getElementById("v-input").focus();
-    if (messages.length === 0 && !isLoading && activeView === "chat") {
-      triggerIntro();
+    // Show prompts if no messages yet
+    if (messages.length === 0) {
+      showPrompts();
     }
   }
 
@@ -494,12 +555,27 @@
 
   // ── Persist session ──────────────────────────────────────────────────────────
   function persistCurrentSession() {
-    // Only save if there was at least one user message
     const hasUserMessage = messages.some((m) => m.role === "user");
     if (!hasUserMessage) return;
     currentSession.messages = [...messages];
     currentSession.title = pageContext.title || currentSession.domain;
     saveSession(currentSession, () => {});
+  }
+
+  // ── Copy to clipboard ────────────────────────────────────────────────────────
+  function copyText(text, btn) {
+    navigator.clipboard.writeText(text).then(() => {
+      btn.classList.add("copied");
+      btn.innerHTML = `<svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg> Copied`;
+      setTimeout(() => {
+        btn.classList.remove("copied");
+        btn.innerHTML = copyBtnInner();
+      }, 2000);
+    }).catch(() => {});
+  }
+
+  function copyBtnInner() {
+    return `<svg width="11" height="11" viewBox="0 0 12 12" fill="none"><rect x="4" y="4" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M1 8V2a1 1 0 0 1 1-1h6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg> Copy`;
   }
 
   // ── Messaging ────────────────────────────────────────────────────────────────
@@ -509,22 +585,46 @@
     container.innerHTML = "";
 
     for (const msg of messages) {
-      const row = document.createElement("div");
-      row.className = "v-msg " + msg.role;
-
-      const avatar = document.createElement("div");
-      avatar.className = "v-msg-avatar";
-      avatar.textContent = msg.role === "assistant" ? "V" : "U";
-
-      const bubble = document.createElement("div");
-      bubble.className = "v-msg-bubble";
-      bubble.textContent = msg.content;
-
-      row.appendChild(avatar);
-      row.appendChild(bubble);
-      container.appendChild(row);
+      container.appendChild(buildMessageEl(msg.role, msg.content));
     }
 
+    container.scrollTop = container.scrollHeight;
+  }
+
+  function buildMessageEl(role, content) {
+    const row = document.createElement("div");
+    row.className = "v-msg " + role;
+
+    const avatar = document.createElement("div");
+    avatar.className = "v-msg-avatar";
+    avatar.textContent = role === "assistant" ? "V" : "U";
+
+    const body = document.createElement("div");
+    body.className = "v-msg-body";
+
+    const bubble = document.createElement("div");
+    bubble.className = "v-msg-bubble";
+    bubble.textContent = content;
+    body.appendChild(bubble);
+
+    // Copy button on assistant messages
+    if (role === "assistant") {
+      const copyBtn = document.createElement("button");
+      copyBtn.className = "v-copy-btn";
+      copyBtn.innerHTML = copyBtnInner();
+      copyBtn.addEventListener("click", () => copyText(content, copyBtn));
+      body.appendChild(copyBtn);
+    }
+
+    row.appendChild(avatar);
+    row.appendChild(body);
+    return row;
+  }
+
+  function appendMessageEl(role, content) {
+    const container = shadow.getElementById("v-messages");
+    if (!container) return;
+    container.appendChild(buildMessageEl(role, content));
     container.scrollTop = container.scrollHeight;
   }
 
@@ -539,12 +639,15 @@
     avatar.className = "v-msg-avatar";
     avatar.textContent = "V";
 
+    const body = document.createElement("div");
+    body.className = "v-msg-body";
     const bubble = document.createElement("div");
     bubble.className = "v-msg-bubble";
     bubble.innerHTML = '<div class="v-typing"><span></span><span></span><span></span></div>';
+    body.appendChild(bubble);
 
     row.appendChild(avatar);
-    row.appendChild(bubble);
+    row.appendChild(body);
     container.appendChild(row);
     container.scrollTop = container.scrollHeight;
   }
@@ -552,6 +655,33 @@
   function removeTyping() {
     const el = shadow.getElementById("v-typing-row");
     if (el) el.remove();
+  }
+
+  function showErrorWithRetry(retryMessages) {
+    const container = shadow.getElementById("v-messages");
+    if (!container) return;
+
+    const wrapper = document.createElement("div");
+    wrapper.className = "v-error-row";
+    wrapper.id = "v-error-row";
+
+    const errMsg = document.createElement("div");
+    errMsg.className = "v-error-msg";
+    errMsg.textContent = "Couldn't reach Victor right now. Check your connection and try again.";
+
+    const retryBtn = document.createElement("button");
+    retryBtn.className = "v-retry-btn";
+    retryBtn.innerHTML = `<svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M10 6A4 4 0 1 1 6 2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M6 2l2-2M6 2l2 2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg> Retry`;
+    retryBtn.addEventListener("click", () => {
+      wrapper.remove();
+      lastFailedMessages = null;
+      doApiCall(retryMessages);
+    });
+
+    wrapper.appendChild(errMsg);
+    wrapper.appendChild(retryBtn);
+    container.appendChild(wrapper);
+    container.scrollTop = container.scrollHeight;
   }
 
   function showNoApiNotice() {
@@ -568,59 +698,46 @@
     });
   }
 
-  async function triggerIntro() {
+  async function doApiCall(msgs) {
     if (!apiUrl) { showNoApiNotice(); return; }
     isLoading = true;
+    shadow.getElementById("v-send").disabled = true;
     showTyping();
 
-    const result = await callAPI([
-      { role: "user", content: "Hey Victor, what are we looking at?" }
-    ]);
+    const result = await callAPI(msgs);
     removeTyping();
     isLoading = false;
+    shadow.getElementById("v-send").disabled =
+      shadow.getElementById("v-input").value.trim() === "";
 
     if (result.error) {
       if (result.error === "no_api_url") { showNoApiNotice(); return; }
-      appendMessage("assistant", "Sorry, I had trouble connecting. Make sure my settings are configured correctly.");
-    } else {
-      appendMessage("assistant", result.reply);
+      lastFailedMessages = msgs;
+      showErrorWithRetry(msgs);
+      return;
     }
 
-    renderMessages();
-    shadow.getElementById("v-send").disabled = shadow.getElementById("v-input").value.trim() === "";
+    messages.push({ role: "assistant", content: result.reply });
+    appendMessageEl("assistant", result.reply);
+    persistCurrentSession();
+  }
+
+  async function sendMessageText(text) {
+    if (!text || isLoading) return;
+    hidePrompts();
+    messages.push({ role: "user", content: text });
+    appendMessageEl("user", text);
+    await doApiCall([...messages]);
   }
 
   async function sendMessage() {
     const input = shadow.getElementById("v-input");
     const text = input.value.trim();
     if (!text || isLoading) return;
-
     input.value = "";
     input.style.height = "";
     shadow.getElementById("v-send").disabled = true;
-
-    appendMessage("user", text);
-    renderMessages();
-
-    isLoading = true;
-    showTyping();
-    shadow.getElementById("v-messages").scrollTop = shadow.getElementById("v-messages").scrollHeight;
-
-    const result = await callAPI(messages);
-    removeTyping();
-    isLoading = false;
-
-    if (result.error) {
-      appendMessage("assistant", "Hmm, I couldn't reach my brain there. Try again in a moment.");
-    } else {
-      appendMessage("assistant", result.reply);
-    }
-
-    renderMessages();
-    shadow.getElementById("v-send").disabled = input.value.trim() === "";
-
-    // Auto-save after each assistant reply (incremental)
-    persistCurrentSession();
+    await sendMessageText(text);
   }
 
   function appendMessage(role, content) {
@@ -655,14 +772,12 @@
   let lastUrl = location.href;
   new MutationObserver(() => {
     if (location.href !== lastUrl) {
-      // Save current session before navigating
       persistCurrentSession();
-
       lastUrl = location.href;
       pageContext = getPageContext();
       messages = [];
+      lastFailedMessages = null;
 
-      // Start a fresh session for the new page
       currentSession = {
         id: generateId(),
         url: pageContext.url,
@@ -673,14 +788,15 @@
       };
 
       updatePageTitle();
-      if (isOpen && activeView === "chat" && !isLoading) {
-        shadow.getElementById("v-messages").innerHTML = "";
-        triggerIntro();
+
+      if (shadow) {
+        const container = shadow.getElementById("v-messages");
+        if (container) container.innerHTML = "";
+        showPrompts();
       }
     }
   }).observe(document.body, { childList: true, subtree: true });
 
-  // Save session when the tab/window is closed
   window.addEventListener("beforeunload", () => {
     persistCurrentSession();
   });

@@ -5,149 +5,155 @@ import { motion } from 'framer-motion';
 export default function Privacy() {
   const sections = [
     {
-      title: "1. Information We Collect",
-      content: (
-        <>
-          <p className="mb-4">When you use Victor, we collect the following types of information:</p>
-          <ul className="list-disc pl-6 space-y-3 mb-4">
-            <li>
-              <strong>Conversation messages:</strong> The text you send to Victor during your sessions. These are transmitted to our API server and to OpenAI's API to generate Victor's responses.
-            </li>
-            <li>
-              <strong>Voice audio:</strong> If you use voice input, your recorded audio is transmitted to our API server and processed by OpenAI's Whisper model for transcription. The audio is not retained after transcription.
-            </li>
-            <li>
-              <strong>Images and photos:</strong> If you share photos (including camera images), they are transmitted to OpenAI's API for visual processing and are not stored on our servers.
-            </li>
-            <li>
-              <strong>Uploaded documents:</strong> Text and Word files you upload for discussion are transmitted to our server and to OpenAI's API, and are not permanently retained after your session.
-            </li>
-            <li>
-              <strong>Goals and conversation history:</strong> Your goals and past conversations are stored <em>locally on your device</em> only, using your device's secure storage. We do not upload or store these on our servers.
-            </li>
-            <li>
-              <strong>Device information:</strong> Basic technical information (device type, OS version) to ensure the app functions correctly.
-            </li>
-          </ul>
-        </>
-      )
-    },
-    {
-      title: "2. How We Use Your Data",
-      content: (
-        <>
-          <p className="mb-4">Your data is used solely to provide the Victor experience.</p>
-          <ul className="list-disc pl-6 space-y-3 mb-4">
-            <li>
-              <strong>AI processing:</strong> Your messages, voice transcriptions, and shared images are processed by OpenAI's API (including GPT and Whisper models) to generate Victor's responses. This processing is subject to{' '}
-              <a href="https://openai.com/policies/privacy-policy" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">OpenAI's privacy policy</a>.
-            </li>
-            <li>
-              <strong>Not used for training:</strong> Your conversations and content are <em>never</em> used by us to train AI models.
-            </li>
-            <li>
-              <strong>No sale of data:</strong> We do not sell your personal data or conversation content to any third party.
-            </li>
-            <li>
-              <strong>No advertising:</strong> We do not use your data for advertising or share it with advertising networks.
-            </li>
-          </ul>
-        </>
-      )
-    },
-    {
-      title: "3. Device Permissions",
-      content: (
-        <>
-          <p className="mb-4">Victor requests the following device permissions, each used only for the stated purpose:</p>
-          <ul className="list-disc pl-6 space-y-3 mb-4">
-            <li>
-              <strong>Microphone:</strong> Used only when you tap the mic button to send a voice message. Victor never listens passively.
-            </li>
-            <li>
-              <strong>Camera:</strong> Used only when you choose to take a photo to share with Victor.
-            </li>
-            <li>
-              <strong>Photo Library:</strong> Used only when you choose to share a photo from your library.
-            </li>
-            <li>
-              <strong>Notifications:</strong> Used only to deliver goal check-in reminders you have set up. You can disable these in your device's notification settings or remove goals inside the app at any time.
-            </li>
-          </ul>
-          <p>You can revoke any permission at any time in your device's Settings. Revoking a permission disables the associated feature but does not otherwise affect the app.</p>
-        </>
-      )
-    },
-    {
-      title: "4. Data Retention & Storage",
-      content: (
-        <>
-          <p className="mb-4">We take a minimal-footprint approach to data retention:</p>
-          <ul className="list-disc pl-6 space-y-3 mb-4">
-            <li>
-              <strong>Server-side:</strong> Conversation messages, voice audio, images, and documents are processed in memory to generate responses and are not permanently stored on our servers.
-            </li>
-            <li>
-              <strong>On-device:</strong> Your conversation history and goals are stored locally on your device using secure on-device storage. This data remains under your control and is not accessible to us.
-            </li>
-            <li>
-              <strong>Clearing your data:</strong> You can delete your conversation history and goals at any time from within the app. Uninstalling the app removes all locally stored data from your device.
-            </li>
-          </ul>
-        </>
-      )
-    },
-    {
-      title: "5. Third-Party Services",
-      content: (
-        <>
-          <p className="mb-4">Victor uses the following third-party service to function:</p>
-          <ul className="list-disc pl-6 space-y-3 mb-4">
-            <li>
-              <strong>OpenAI:</strong> Victor's responses and voice transcription are powered by OpenAI's API. Content you send to Victor (text, voice audio, images) is transmitted to OpenAI for processing. OpenAI's use of this data is governed by their{' '}
-              <a href="https://openai.com/policies/privacy-policy" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">Privacy Policy</a>.
-            </li>
-          </ul>
-          <p>We do not share your data with any other third parties.</p>
-        </>
-      )
-    },
-    {
-      title: "6. Children's Privacy",
+      title: "1. The short version",
       content: (
         <p className="mb-4">
-          Victor is not intended for children under the age of 13. We do not knowingly collect personal information from children under 13. If you believe a child under 13 has provided us with personal information, please contact us at{' '}
-          <a href="mailto:support@victor.ai.life" className="text-primary hover:underline">support@victor.ai.life</a>{' '}
-          and we will take steps to delete that information.
+          Victor reads web pages locally in your browser and sends your messages to our API server, which forwards them to OpenAI to generate replies. Your conversation history is saved only in your browser's local storage — never on our servers. We collect no personal information, require no account, and sell nothing.
         </p>
       )
     },
     {
-      title: "7. Your Rights",
+      title: "2. What Victor reads",
       content: (
         <>
-          <p className="mb-4">You have the following rights regarding your data:</p>
+          <p className="mb-4">
+            When you visit a page, Victor reads the visible text content of that page inside your browser. This happens locally — the page text is not sent anywhere until you open the chat and ask a question.
+          </p>
+          <p className="mb-4">
+            When you send a message, Victor transmits the following to our API server:
+          </p>
           <ul className="list-disc pl-6 space-y-3 mb-4">
-            <li><strong>Access:</strong> You can request a description of any personal data we hold about you.</li>
-            <li><strong>Deletion:</strong> You can delete your conversation history and goals from within the app at any time. As we do not permanently store your conversations on our servers, there is no additional server-side account to delete.</li>
-            <li><strong>Permissions:</strong> You can revoke camera, microphone, photo library, and notification permissions at any time in your device Settings.</li>
+            <li><strong>Your message</strong> — the text you typed.</li>
+            <li><strong>The conversation so far</strong> — prior messages in the current session, so Victor can maintain context.</li>
+            <li><strong>A snippet of the page text</strong> — up to 5,000 characters of the page's visible content, so Victor knows what you're discussing.</li>
+            <li><strong>The page URL and title</strong> — used to identify the page in Victor's reply.</li>
+            <li><strong>Your browser's language setting</strong> — so Victor can respond in the right language.</li>
           </ul>
+          <p>
+            This information is passed to OpenAI's API to generate Victor's response and is not stored on our servers beyond the duration of the API call.
+          </p>
         </>
       )
     },
     {
-      title: "8. Changes to This Policy",
+      title: "3. Conversation history",
+      content: (
+        <>
+          <p className="mb-4">
+            Victor automatically saves your conversations to <strong>your browser's local storage</strong> using the standard browser extension storage API (<code>chrome.storage.local</code> / <code>browser.storage.local</code>). This means:
+          </p>
+          <ul className="list-disc pl-6 space-y-3 mb-4">
+            <li>Your history lives entirely on your device.</li>
+            <li>We cannot read, access, or delete it — it is not synced to any server.</li>
+            <li>You can clear your entire history at any time from the History tab inside Victor's chat panel.</li>
+            <li>Uninstalling the extension removes all stored data from your device.</li>
+          </ul>
+          <p>
+            Victor keeps a maximum of 100 past sessions. Once you reach that limit, the oldest session is automatically removed to make room for new ones.
+          </p>
+        </>
+      )
+    },
+    {
+      title: "4. Browser permissions",
+      content: (
+        <>
+          <p className="mb-4">Victor requests the following browser extension permissions:</p>
+          <ul className="list-disc pl-6 space-y-3 mb-4">
+            <li>
+              <strong>activeTab / scripting:</strong> Allows Victor to read the text content of the page you are currently viewing, and to inject the floating chat button. Victor only reads the active tab — it cannot read tabs you have not opened.
+            </li>
+            <li>
+              <strong>storage:</strong> Allows Victor to save your conversation history locally in your browser. No data is written to any external server.
+            </li>
+          </ul>
+          <p>Victor does not request access to your camera, microphone, downloads, bookmarks, browsing history, or any other browser data.</p>
+        </>
+      )
+    },
+    {
+      title: "5. OpenAI",
+      content: (
+        <>
+          <p className="mb-4">
+            Victor's responses are generated by OpenAI's API. When you send a message, the content described in Section 2 is transmitted to OpenAI for processing. OpenAI's handling of this data is governed by their{' '}
+            <a href="https://openai.com/policies/privacy-policy" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">Privacy Policy</a>.
+          </p>
+          <p className="mb-4">
+            By default, OpenAI does not use API inputs to train its models. We have not opted in to any data-sharing arrangement with OpenAI beyond what is required to operate the API.
+          </p>
+          <p>
+            We do not share your data with any other third parties.
+          </p>
+        </>
+      )
+    },
+    {
+      title: "6. What we do not collect",
+      content: (
+        <ul className="list-disc pl-6 space-y-3 mb-4">
+          <li>We do not collect your name, email address, or any other personal identifier — no account is required.</li>
+          <li>We do not track which websites you visit beyond what is needed to answer your current question.</li>
+          <li>We do not log IP addresses beyond what is standard in web server infrastructure (request routing).</li>
+          <li>We do not use cookies or tracking pixels on the extension or this website.</li>
+          <li>We do not sell your data. Ever.</li>
+          <li>We do not use your conversations to train AI models.</li>
+        </ul>
+      )
+    },
+    {
+      title: "7. Data retention",
+      content: (
+        <>
+          <p className="mb-4">
+            <strong>Server-side:</strong> Messages, page snippets, and URLs sent to our API server are processed in memory to generate a response and are not written to any persistent storage. We retain standard web server access logs (IP address, timestamp, HTTP method, response code) for up to 30 days for security and diagnostic purposes only.
+          </p>
+          <p>
+            <strong>On-device:</strong> Your conversation history is stored in your browser's local extension storage indefinitely until you clear it or uninstall the extension.
+          </p>
+        </>
+      )
+    },
+    {
+      title: "8. Children's privacy",
       content: (
         <p className="mb-4">
-          We may update this Privacy Policy from time to time. When we do, we will revise the "Last updated" date at the top of this page. We encourage you to review this policy periodically. Continued use of Victor after any changes constitutes your acceptance of the updated policy.
+          Victor is not intended for children under the age of 13. We do not knowingly collect information from children under 13. If you believe a child under 13 has used Victor in a way that concerns you, please contact us at{' '}
+          <a href="mailto:support@victor.ai.life" className="text-primary hover:underline">support@victor.ai.life</a>.
         </p>
       )
     },
     {
-      title: "9. Contact Us",
+      title: "9. Your rights",
+      content: (
+        <>
+          <p className="mb-4">Because we collect no personal account information and store no conversation data on our servers, most data rights are exercised directly on your device:</p>
+          <ul className="list-disc pl-6 space-y-3 mb-4">
+            <li><strong>Clear history:</strong> Open Victor's chat panel → History tab → Clear all.</li>
+            <li><strong>Remove all data:</strong> Uninstall the extension from your browser's extension manager.</li>
+            <li><strong>Revoke permissions:</strong> Remove the extension's site access or storage permissions from your browser settings at any time.</li>
+          </ul>
+          <p>
+            If you have questions about data we may hold at the server level (access logs), contact us at{' '}
+            <a href="mailto:support@victor.ai.life" className="text-primary hover:underline">support@victor.ai.life</a>{' '}
+            and we will respond within 30 days.
+          </p>
+        </>
+      )
+    },
+    {
+      title: "10. Changes to this policy",
       content: (
         <p className="mb-4">
-          If you have questions about this policy or our privacy practices, please contact us at{' '}
+          We may update this Privacy Policy from time to time. When we do, we will update the "Last updated" date below. Continued use of Victor after any changes constitutes acceptance of the updated policy. For material changes, we will note them prominently on this page.
+        </p>
+      )
+    },
+    {
+      title: "11. Contact",
+      content: (
+        <p className="mb-4">
+          Questions about privacy? Email us at{' '}
           <a href="mailto:support@victor.ai.life" className="text-primary hover:underline">support@victor.ai.life</a>.
         </p>
       )
@@ -157,7 +163,7 @@ export default function Privacy() {
   return (
     <Layout>
       <div className="pt-32 pb-20 px-6 md:px-12 max-w-4xl mx-auto w-full">
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
@@ -165,10 +171,10 @@ export default function Privacy() {
           <Link href="/" className="text-primary hover:text-foreground transition-colors text-sm tracking-widest uppercase font-semibold flex items-center gap-2 mb-8">
             <span className="text-lg leading-none">&larr;</span> Back to Home
           </Link>
-          
+
           <h1 className="text-4xl md:text-6xl font-serif mb-6">Privacy Policy</h1>
           <p className="text-muted-foreground tracking-wide text-sm mb-16 uppercase">
-            Last updated: July 2026
+            Last updated: July 21, 2026
           </p>
 
           <div className="prose prose-lg prose-headings:font-serif prose-headings:font-normal prose-headings:text-foreground prose-p:text-secondary/80 prose-li:text-secondary/80 max-w-none">
@@ -178,12 +184,12 @@ export default function Privacy() {
 
             <div className="space-y-12">
               {sections.map((section, index) => (
-                <motion.section 
+                <motion.section
                   key={index}
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
-                  transition={{ duration: 0.5, delay: index * 0.05 }}
+                  transition={{ duration: 0.5, delay: index * 0.04 }}
                 >
                   <h2 className="text-2xl md:text-3xl font-serif mb-6">{section.title}</h2>
                   <div className="text-lg leading-relaxed font-sans">
