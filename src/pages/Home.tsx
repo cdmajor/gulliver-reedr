@@ -120,13 +120,14 @@ export default function Home() {
             </motion.p>
 
             <motion.div variants={fadeUp} className="flex flex-col sm:flex-row gap-4 pt-4">
-              <a
-                href="#download"
+              <button
+                type="button"
+                onClick={() => handleDownload(browser)}
                 className="bg-primary text-primary-foreground px-8 py-4 flex items-center justify-center gap-3 rounded-full hover:bg-primary/80 transition-colors duration-300 w-full sm:w-auto font-medium"
               >
                 <span>{BROWSER_LABELS[browser].icon}</span>
                 <span className="tracking-wide">{BROWSER_LABELS[browser].cta}</span>
-              </a>
+              </button>
             </motion.div>
           </motion.div>
 
