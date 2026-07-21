@@ -1,6 +1,5 @@
 import { FC, ReactNode } from 'react';
 import { Link } from 'wouter';
-import { SiApple } from 'react-icons/si';
 import logoSrc from '@/assets/victor-logo_2.png';
 
 interface LayoutProps {
@@ -24,8 +23,8 @@ export const Layout: FC<LayoutProps> = ({ children }) => {
             href="#download"
             className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-full hover:bg-primary/80 transition-all duration-300"
           >
-            <SiApple className="w-4 h-4" />
-            <span>App Store</span>
+            <span>⬇</span>
+            <span>Install</span>
           </a>
         </nav>
       </header>
@@ -39,7 +38,7 @@ export const Layout: FC<LayoutProps> = ({ children }) => {
           <div className="flex flex-col gap-5 max-w-sm">
             <img src={logoSrc} alt="Victor" className="h-12 w-12 rounded-xl object-cover" />
             <p className="text-muted-foreground text-sm leading-relaxed">
-              A companion who knows you, remembers you, and is genuinely glad you showed up.
+              A browser extension that reads every page you visit and is always ready to talk about it.
             </p>
           </div>
 
@@ -47,7 +46,7 @@ export const Layout: FC<LayoutProps> = ({ children }) => {
             <div className="flex flex-col gap-4">
               <span className="text-muted-foreground/60 uppercase tracking-widest text-xs font-semibold">Product</span>
               <Link href="/" className="text-muted-foreground hover:text-foreground transition-colors">Home</Link>
-              <a href="#download" className="text-muted-foreground hover:text-foreground transition-colors">Download</a>
+              <a href="#download" className="text-muted-foreground hover:text-foreground transition-colors">Install</a>
             </div>
             <div className="flex flex-col gap-4">
               <span className="text-muted-foreground/60 uppercase tracking-widest text-xs font-semibold">Legal & Help</span>
@@ -60,7 +59,7 @@ export const Layout: FC<LayoutProps> = ({ children }) => {
 
         <div className="max-w-7xl mx-auto mt-12 pt-8 border-t border-border flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-muted-foreground/60">
           <p>© {new Date().getFullYear()} Victor. All rights reserved.</p>
-          <p>victor.ai.life</p>
+          <p>Works on Chrome, Edge, and Firefox.</p>
         </div>
       </footer>
     </div>

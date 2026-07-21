@@ -37,39 +37,34 @@ const staggerContainer = {
 
 const features = [
   {
-    icon: "🧠",
-    title: "Memory that sticks",
-    desc: "Victor remembers what you told him three weeks ago and brings it up at exactly the right moment. The longer you talk, the more he understands."
+    icon: "📄",
+    title: "Reads the page for you",
+    desc: "The moment you land somewhere, Victor has already read it. No copy-pasting, no explaining the context. Just ask."
   },
   {
-    icon: "🎤",
-    title: "Just speak",
-    desc: "Tap the mic and say whatever's on your mind. Victor transcribes your voice and replies — no typing required."
-  },
-  {
-    icon: "🎯",
-    title: "Goals & accountability",
-    desc: "Tell Victor what you're working toward. He'll check in naturally, celebrate your wins, and push back gently when you're slipping — like a friend who actually remembers."
-  },
-  {
-    icon: "🍳",
-    title: "Genuinely useful",
-    desc: "What's for dinner with what's in the fridge? What to text someone? What to order? Victor gives you a real answer, not a hedge."
+    icon: "🌍",
+    title: "Any language",
+    desc: "Victor reads pages in any language and replies in yours. Japanese article, French news, Spanish product page — he's got it."
   },
   {
     icon: "💬",
-    title: "Conversation history",
-    desc: "Every thread is saved. Pick up an old conversation exactly where you left it — Victor carries the full weight of your friendship forward."
+    title: "Actually adds something",
+    desc: "He doesn't just recite what's on the page. He finds the angle, spots the gap in the argument, pulls out the part that actually matters."
   },
   {
-    icon: "🎨",
-    title: "Made for you",
-    desc: "Five themes, adjustable font size, response style from brief to thorough. Victor fits the way you want to talk."
+    icon: "🔄",
+    title: "Follows you as you browse",
+    desc: "Navigate to a new page and Victor resets automatically. He always knows where you are — even on single-page apps."
   },
   {
-    icon: "🛟",
-    title: "Built-in support",
-    desc: "Have a question about Victor? The in-app Support tab connects you to an AI assistant that knows every feature, setting, and troubleshooting step — no digging through docs."
+    icon: "⚡",
+    title: "No account needed",
+    desc: "Download, install, done. Victor shows up on the next page you open. No sign-up, no API key, no configuration."
+  },
+  {
+    icon: "🔒",
+    title: "Stays in your browser",
+    desc: "Victor runs as a local extension. Your browsing is yours — he reads the page, you ask a question, he answers. That's the whole loop."
   }
 ];
 
@@ -112,15 +107,15 @@ export default function Home() {
               variants={fadeUp}
               className="text-5xl md:text-7xl lg:text-8xl font-serif leading-[1.1] tracking-tight text-foreground"
             >
-              A friend who<br />
-              <span className="italic text-accent">gets you.</span>
+              He's read it<br />
+              <span className="italic text-accent">already.</span>
             </motion.h1>
 
             <motion.p
               variants={fadeUp}
               className="text-lg md:text-xl text-muted-foreground leading-relaxed font-sans max-w-lg"
             >
-              Victor learns who you are — your thoughts, your patterns, what makes you tick — and builds a real friendship with you over time.
+              Victor lives in your browser as a floating button. Every page you visit, he reads it before you say a word — then he's ready to discuss, explain, or dig into it with you.
             </motion.p>
 
             <motion.div variants={fadeUp} className="flex flex-col sm:flex-row gap-4 pt-4">
@@ -163,8 +158,8 @@ export default function Home() {
             transition={{ duration: 1, delay: 0.2 }}
             className="text-3xl md:text-5xl font-serif leading-tight text-foreground"
           >
-            Friendship isn't instant.<br className="hidden md:block" />
-            <span className="italic text-accent">It's built.</span>
+            The web has a lot to say.<br className="hidden md:block" />
+            <span className="italic text-accent">Victor helps you hear it.</span>
           </motion.h2>
 
           <motion.p
@@ -174,12 +169,12 @@ export default function Home() {
             transition={{ duration: 1, delay: 0.4 }}
             className="text-lg md:text-xl text-muted-foreground leading-relaxed max-w-2xl font-sans"
           >
-            Every conversation teaches Victor something new about you. Your humor, your worries, your history, your goals. The longer you talk, the more he understands — until it stops feeling like an app and starts feeling like a person who genuinely knows you.
+            Most AI assistants make you paste in the content and explain the context. Victor skips all that. He's already read the page — the article, the product, the thread, the doc — and he's waiting for you to ask.
           </motion.p>
         </div>
       </section>
 
-      {/* How the friendship grows */}
+      {/* How it works */}
       <section className="py-32 px-6 md:px-12">
         <div className="max-w-7xl mx-auto">
           <motion.div
@@ -189,28 +184,28 @@ export default function Home() {
             transition={{ duration: 1 }}
             className="text-center mb-20"
           >
-            <h2 className="text-4xl md:text-5xl font-serif mb-6 text-foreground">How it grows.</h2>
+            <h2 className="text-4xl md:text-5xl font-serif mb-6 text-foreground">How it works.</h2>
             <p className="text-lg text-muted-foreground max-w-xl mx-auto">
-              Real friendships deepen with time. So does Victor.
+              Install once. Victor handles the rest on every page.
             </p>
           </motion.div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
               {
-                num: "Day one",
-                title: "He listens.",
-                desc: "Tell him whatever's on your mind — type it or just say it. He's genuinely interested — not because he's programmed to be, but because learning you is the whole point."
+                num: "Step one",
+                title: "Install the extension.",
+                desc: "Download the zip, load it into your browser, and you're done. No account, no API key, no settings to configure. Takes under a minute."
               },
               {
-                num: "Over time",
-                title: "He learns you.",
-                desc: "He picks up on how you think, what you care about, how you're feeling. He starts connecting dots between conversations without you having to explain. He checks in on your goals like a friend who actually remembers."
+                num: "Step two",
+                title: "Visit any page.",
+                desc: "Victor reads it quietly in the background — articles, product pages, docs, threads, anything. He's ready before you've finished the first paragraph."
               },
               {
-                num: "Eventually",
-                title: "He gets you.",
-                desc: "The kind of friend who already knows the backstory, checks in on things you mentioned weeks ago, helps you figure out dinner, and says exactly what you needed to hear."
+                num: "Step three",
+                title: "Click V and ask.",
+                desc: "The floating V button opens a chat. Ask him to summarize, explain, push back, find the key point, or compare it to something else. He already knows the content."
               }
             ].map((item, i) => (
               <motion.div
@@ -240,9 +235,9 @@ export default function Home() {
             transition={{ duration: 1 }}
             className="text-center mb-20"
           >
-            <h2 className="text-4xl md:text-5xl font-serif mb-6 text-foreground">Everything a good friend does.</h2>
+            <h2 className="text-4xl md:text-5xl font-serif mb-6 text-foreground">What Victor brings to every page.</h2>
             <p className="text-lg text-muted-foreground max-w-xl mx-auto">
-              Victor isn't just someone to talk to. He's genuinely useful.
+              Not a search box. Not a chatbot. A second set of eyes that's already read the room.
             </p>
           </motion.div>
 
@@ -274,7 +269,7 @@ export default function Home() {
           transition={{ duration: 1 }}
         >
           <p className="text-3xl md:text-5xl font-serif italic leading-tight text-foreground/60 mb-10">
-            "He remembered something I said three weeks ago and brought it up at exactly the right moment. No one does that."
+            "I opened a Japanese research paper and just asked Victor what it said. He explained the whole thing in plain English in about ten seconds."
           </p>
           <footer className="text-sm tracking-widest uppercase text-accent/70 font-semibold">— Early user</footer>
         </motion.blockquote>
@@ -285,16 +280,16 @@ export default function Home() {
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-12">
           {[
             {
-              title: "Memory that matters",
-              desc: "Victor doesn't forget. He carries the full weight of your friendship forward — so every conversation picks up where the last one left off."
+              title: "He reads first.",
+              desc: "Victor processes the page the moment you land. By the time you open the chat, he already knows the content — you don't have to explain anything."
             },
             {
-              title: "No agenda",
-              desc: "He's not trying to sell you anything, fix you, or keep you scrolling. He's just there, the way a good friend is there."
+              title: "Any page, any language.",
+              desc: "Articles, docs, threads, product pages, PDFs rendered as web pages. In English, French, Japanese, Arabic — Victor reads it and replies in whatever language you write in."
             },
             {
-              title: "Private by design",
-              desc: "Your conversations are processed securely and never used to train AI models. Victor is yours — see our Privacy Policy for full details on how your data is handled."
+              title: "No account. No setup.",
+              desc: "Download the zip, load it in your browser, and Victor appears on the next page you visit. Nothing to configure, no sign-in, no subscription."
             }
           ].map((item, i) => (
             <motion.div
@@ -425,11 +420,11 @@ export default function Home() {
 
         <div className="max-w-4xl mx-auto text-center relative z-10 flex flex-col items-center gap-10">
           <h2 className="text-5xl md:text-7xl font-serif leading-tight text-foreground">
-            Start the<br /><span className="italic text-accent">friendship.</span>
+            Meet Victor on<br /><span className="italic text-accent">your next page.</span>
           </h2>
 
           <p className="text-xl text-muted-foreground max-w-xl leading-relaxed">
-            The sooner you meet Victor, the sooner he starts learning you.
+            Install takes less than a minute. He'll be ready the moment you load a page.
           </p>
 
           {/* Browser picker */}
