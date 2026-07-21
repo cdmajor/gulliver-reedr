@@ -1,13 +1,14 @@
+// Cross-browser shim: Firefox exposes `browser`, Chrome/Edge expose `chrome`.
+const browserAPI = (typeof browser !== "undefined" && browser.runtime) ? browser : chrome;
+
 const apiUrlInput = document.getElementById("apiUrl");
 const saveBtn = document.getElementById("saveBtn");
 const testBtn = document.getElementById("testBtn");
 const statusEl = document.getElementById("status");
 
 // Load saved value
-chrome.storage.sync.get(["victorApiUrl"], (result) => {
-  if (result.victorApiUrl) {
-    apiUrlInput.value = result.victorApiUrl;
-  }
+browserAPI.storage.sync.get(["victorApiUrl"]).then((result) => {
+  if (result.victorApiUrl) apiUrlInput.value = result.victorApiUrl;
 });
 
 function showStatus(msg, type) {
@@ -18,13 +19,10 @@ function showStatus(msg, type) {
 
 saveBtn.addEventListener("click", () => {
   const url = apiUrlInput.value.trim().replace(/\/$/, "");
-  if (!url) {
-    showStatus("Please enter an API URL.", "error");
-    return;
-  }
+  if (!url) { showStatus("Please enter an API URL.", "error"); return; }
   saveBtn.disabled = true;
   saveBtn.textContent = "Saving…";
-  chrome.storage.sync.set({ victorApiUrl: url }, () => {
+  browserAPI.storage.sync.set({ victorApiUrl: url }).then(() => {
     saveBtn.disabled = false;
     saveBtn.textContent = "Save Settings";
     showStatus("Settings saved! Victor is ready.", "success");
@@ -33,10 +31,7 @@ saveBtn.addEventListener("click", () => {
 
 testBtn.addEventListener("click", async () => {
   const url = apiUrlInput.value.trim().replace(/\/$/, "");
-  if (!url) {
-    showStatus("Enter an API URL first.", "error");
-    return;
-  }
+  if (!url) { showStatus("Enter an API URL first.", "error"); return; }
   testBtn.disabled = true;
   testBtn.textContent = "…";
   try {

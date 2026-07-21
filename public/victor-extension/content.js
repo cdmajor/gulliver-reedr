@@ -1,9 +1,13 @@
 // Victor — AI Web Companion
+// Works on Chrome, Edge, and Firefox.
 // Injects an isolated chat bubble using Shadow DOM so host page styles can't interfere.
 (function () {
   "use strict";
 
   if (document.getElementById("victor-companion-root")) return;
+
+  // Cross-browser shim: Firefox exposes `browser`, Chrome/Edge expose `chrome`.
+  const browserAPI = (typeof browser !== "undefined" && browser.runtime) ? browser : chrome;
 
   // ── Page context ─────────────────────────────────────────────────────────────
   function getPageContext() {
@@ -33,7 +37,7 @@
   }
 
   function loadHistory(cb) {
-    chrome.storage.local.get([STORAGE_KEY], (result) => {
+    browserAPI.storage.local.get([STORAGE_KEY]).then((result) => {
       cb(result[STORAGE_KEY] || []);
     });
   }
@@ -41,16 +45,14 @@
   function saveSession(session, cb) {
     if (!session || session.messages.length === 0) { if (cb) cb(); return; }
     loadHistory((history) => {
-      // Remove any existing entry for the same session id
       const filtered = history.filter((s) => s.id !== session.id);
-      // Prepend updated session, cap list
       const updated = [session, ...filtered].slice(0, MAX_SESSIONS);
-      chrome.storage.local.set({ [STORAGE_KEY]: updated }, cb);
+      browserAPI.storage.local.set({ [STORAGE_KEY]: updated }).then(() => { if (cb) cb(); });
     });
   }
 
   function clearHistory(cb) {
-    chrome.storage.local.set({ [STORAGE_KEY]: [] }, cb);
+    browserAPI.storage.local.set({ [STORAGE_KEY]: [] }).then(() => { if (cb) cb(); });
   }
 
   function formatDate(ts) {
@@ -562,7 +564,7 @@
       </div>
     `;
     shadow.getElementById("v-open-options")?.addEventListener("click", () => {
-      chrome.runtime.sendMessage({ type: "VICTOR_OPEN_OPTIONS" });
+      browserAPI.runtime.sendMessage({ type: "VICTOR_OPEN_OPTIONS" });
     });
   }
 
@@ -627,11 +629,11 @@
 
   function callAPI(msgs) {
     return new Promise((resolve) => {
-      chrome.runtime.sendMessage(
+      browserAPI.runtime.sendMessage(
         { type: "VICTOR_CHAT", payload: { messages: msgs, pageContext, apiUrl } },
         (response) => {
-          if (chrome.runtime.lastError) {
-            resolve({ error: chrome.runtime.lastError.message });
+          if (browserAPI.runtime.lastError) {
+            resolve({ error: browserAPI.runtime.lastError.message });
           } else {
             resolve(response || { error: "no_response" });
           }
@@ -642,8 +644,8 @@
 
   // ── Init ─────────────────────────────────────────────────────────────────────
   function start() {
-    chrome.runtime.sendMessage({ type: "VICTOR_GET_CONFIG" }, (response) => {
-      if (chrome.runtime.lastError) return;
+    browserAPI.runtime.sendMessage({ type: "VICTOR_GET_CONFIG" }, (response) => {
+      if (browserAPI.runtime.lastError) return;
       apiUrl = response?.apiUrl || "";
       createUI();
     });
