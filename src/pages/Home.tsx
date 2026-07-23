@@ -230,7 +230,7 @@ export default function Home() {
               {
                 num: "Step one",
                 title: "Install the extension.",
-                desc: "Download the zip and load it into Chrome, Edge, or Firefox. Load the extension and start chatting. Optional account unlocks Reedr Plus memory. Takes under a minute."
+                desc: "Download the zip and load it into Chrome, Edge, Firefox, Brave, Opera, or Safari. Optional account unlocks Reedr Plus memory. Takes under a minute."
               },
               {
                 num: "Step two",
