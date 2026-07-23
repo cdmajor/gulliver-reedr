@@ -131,18 +131,31 @@ export function InstallModal({ onClose, initialBrowser }: InstallModalProps) {
             </div>
 
             <div className="px-6 py-5 flex flex-col gap-5">
-              <Step n={1} title="Unzip the download">
-                Open your Downloads folder and double-click{' '}
-                <code className="text-[#a78bfa] font-mono text-[12px]">reedr-extension.zip</code>.
-                You’ll get a folder named{' '}
-                <code className="text-[#a78bfa] font-mono text-[12px]">reedr-extension</code>.
+
+              {/* Warning banner */}
+              <div className="bg-[#2a1a00] border border-[#c47a00]/40 rounded-xl px-4 py-3 flex items-start gap-2.5">
+                <span className="text-lg leading-none mt-0.5">⚠️</span>
+                <p className="text-[#f5b942] text-xs leading-relaxed">
+                  <strong className="text-[#ffd280]">Don't open the files inside the zip.</strong>{' '}
+                  That just shows you raw code in browser tabs — it doesn't install anything.
+                  Follow the steps below instead.
+                </p>
+              </div>
+
+              <Step n={1} title="Extract the zip">
+                In your Downloads folder, <strong className="text-white">right-click</strong>{' '}
+                <code className="text-[#a78bfa] font-mono text-[12px]">reedr-extension.zip</code>{' '}
+                and choose <strong className="text-white">Extract All</strong> (Windows) or{' '}
+                <strong className="text-white">Open</strong> (Mac). You'll get a folder called{' '}
+                <code className="text-[#a78bfa] font-mono text-[12px]">reedr-extension</code>.{' '}
+                <span className="text-[#c47a00]">Don't open the files inside it.</span>
               </Step>
 
               {chromium && (
                 <>
                   <Step n={2} title={`Open ${BROWSER_LABELS[browser]} extensions`}>
                     <p className="mb-3">
-                      Paste this in a new tab, then turn on <strong className="text-white">Developer mode</strong>:
+                      Type this in a new tab, then flip on <strong className="text-white">Developer mode</strong> (top-right toggle):
                     </p>
                     <div className="flex items-center gap-2">
                       <code className="flex-1 bg-[#0d0d1e] border border-[#2a2a4a] rounded-lg px-3 py-2 text-[#a78bfa] font-mono text-xs truncate">
@@ -156,9 +169,10 @@ export function InstallModal({ onClose, initialBrowser }: InstallModalProps) {
                       </button>
                     </div>
                   </Step>
-                  <Step n={3} title="Load the folder">
-                    Click <strong className="text-white">Load unpacked</strong>, then choose the{' '}
-                    <code className="text-[#a78bfa] font-mono text-[12px]">reedr-extension</code> folder.
+                  <Step n={3} title="Load the folder (not the files inside)">
+                    Click <strong className="text-white">Load unpacked</strong>, then select the{' '}
+                    <code className="text-[#a78bfa] font-mono text-[12px]">reedr-extension</code>{' '}
+                    <strong className="text-white">folder</strong> — not any file inside it.
                   </Step>
                 </>
               )}
