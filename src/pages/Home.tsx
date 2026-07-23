@@ -5,18 +5,21 @@ import { InstallModal, detectBrowser } from '@/components/InstallGuide';
 import DemoVideo from '@/pages/DemoVideo';
 import heroImage from '@/assets/hero-browser.jpg';
 
-type Browser = 'chrome' | 'edge' | 'firefox';
+type Browser = 'chrome' | 'edge' | 'firefox' | 'safari' | 'brave' | 'opera';
 
 const BROWSER_LABELS: Record<Browser, { icon: string; name: string; cta: string }> = {
-  chrome: { icon: '🟡', name: 'Chrome', cta: 'Download for Chrome' },
-  edge:   { icon: '🔵', name: 'Edge',   cta: 'Download for Edge' },
-  firefox:{ icon: '🦊', name: 'Firefox',cta: 'Download for Firefox' },
+  chrome:  { icon: '🟡', name: 'Chrome',  cta: 'Download for Chrome' },
+  edge:    { icon: '🔵', name: 'Edge',    cta: 'Download for Edge' },
+  firefox: { icon: '🦊', name: 'Firefox', cta: 'Download for Firefox' },
+  safari:  { icon: '🧭', name: 'Safari',  cta: 'Download for Safari' },
+  brave:   { icon: '🦁', name: 'Brave',   cta: 'Download for Brave' },
+  opera:   { icon: '🔴', name: 'Opera',   cta: 'Download for Opera' },
 };
 
 function extensionDownloadUrl(browser: Browser) {
   return (
     window.location.origin +
-    '/api/victor/extension-download?origin=' +
+    '/api/reedr/extension-download?origin=' +
     encodeURIComponent(window.location.origin) +
     '&browser=' +
     browser
@@ -40,12 +43,12 @@ const features = [
   {
     icon: "📄",
     title: "Reads the page for you",
-    desc: "The moment you land somewhere, Victor has already read it. No copy-pasting, no explaining the context. Just ask."
+    desc: "The moment you land somewhere, Reedr has already read it. No copy-pasting, no explaining the context. Just ask."
   },
   {
     icon: "🌍",
     title: "Any language",
-    desc: "Victor reads pages in any language and replies in yours. Japanese article, French news, Spanish product page — he's got it."
+    desc: "Reedr reads pages in any language and replies in yours. Japanese article, French news, Spanish product page — he's got it."
   },
   {
     icon: "💬",
@@ -55,7 +58,7 @@ const features = [
   {
     icon: "🔄",
     title: "Follows you as you browse",
-    desc: "Navigate to a new page and Victor resets automatically. He always knows where you are — even on single-page apps."
+    desc: "Navigate to a new page and Reedr resets automatically. He always knows where you are — even on single-page apps."
   },
   {
     icon: "🕓",
@@ -65,7 +68,7 @@ const features = [
   {
     icon: "🧩",
     title: "Chrome, Edge, and Firefox",
-    desc: "One download works across all three browsers. Victor runs as a local extension — nothing leaves your device, no account required."
+    desc: "One download works across all major browsers. Reedr runs as a local extension — nothing leaves your device, no account required."
   }
 ];
 
@@ -80,7 +83,7 @@ export default function Home() {
   function handleDownload(b: Browser = browser) {
     const a = document.createElement('a');
     a.href = extensionDownloadUrl(b);
-    a.download = 'victor-extension.zip';
+    a.download = 'reedr-extension.zip';
     a.click();
     setBrowser(b);
     setInstallOpen(true);
@@ -101,7 +104,7 @@ export default function Home() {
           >
             <motion.div variants={fadeUp} className="flex items-center gap-3">
               <span className="w-8 h-[1px] bg-accent"></span>
-              <span className="text-accent tracking-widest uppercase text-xs font-semibold">Meet Victor</span>
+              <span className="text-accent tracking-widest uppercase text-xs font-semibold">Meet Reedr</span>
             </motion.div>
 
             <motion.h1
@@ -116,7 +119,7 @@ export default function Home() {
               variants={fadeUp}
               className="text-lg md:text-xl text-muted-foreground leading-relaxed font-sans max-w-lg"
             >
-              Victor lives in your browser as a floating button. Every page you visit, he reads it before you say a word — then he's ready to discuss, explain, or dig into it with you.
+              Reedr lives in your browser as a floating button. Every page you visit, he reads it before you say a word — then he's ready to discuss, explain, or dig into it with you.
             </motion.p>
 
             <motion.div variants={fadeUp} className="flex flex-col sm:flex-row gap-4 pt-4">
@@ -140,7 +143,7 @@ export default function Home() {
             <div className="absolute inset-0 rounded-2xl bg-secondary border border-border" />
             <img
               src={heroImage}
-              alt="Victor"
+              alt="Reedr"
               className="relative z-10 w-2/3 md:w-1/2 drop-shadow-lg"
               onError={(e) => {
                 e.currentTarget.style.display = 'none';
@@ -161,7 +164,7 @@ export default function Home() {
             className="text-3xl md:text-5xl font-serif leading-tight text-foreground"
           >
             The web has a lot to say.<br className="hidden md:block" />
-            <span className="italic text-accent">Victor helps you hear it.</span>
+            <span className="italic text-accent">Reedr helps you hear it.</span>
           </motion.h2>
 
           <motion.p
@@ -171,7 +174,7 @@ export default function Home() {
             transition={{ duration: 1, delay: 0.4 }}
             className="text-lg md:text-xl text-muted-foreground leading-relaxed max-w-2xl font-sans"
           >
-            Most AI assistants make you paste in the content and explain the context. Victor skips all that. He's already read the page — the article, the product, the thread, the doc — and he's waiting for you to ask.
+            Most AI assistants make you paste in the content and explain the context. Reedr skips all that. He's already read the page — the article, the product, the thread, the doc — and he's waiting for you to ask.
           </motion.p>
         </div>
       </section>
@@ -218,7 +221,7 @@ export default function Home() {
           >
             <h2 className="text-4xl md:text-5xl font-serif mb-6 text-foreground">How it works.</h2>
             <p className="text-lg text-muted-foreground max-w-xl mx-auto">
-              Install once. Victor handles the rest on every page.
+              Install once. Reedr handles the rest on every page.
             </p>
           </motion.div>
 
@@ -232,7 +235,7 @@ export default function Home() {
               {
                 num: "Step two",
                 title: "Visit any page.",
-                desc: "Victor reads it quietly in the background — articles, product pages, docs, threads, anything. He's ready before you've finished the first paragraph."
+                desc: "Reedr reads it quietly in the background — articles, product pages, docs, threads, anything. He's ready before you've finished the first paragraph."
               },
               {
                 num: "Step three",
@@ -267,7 +270,7 @@ export default function Home() {
             transition={{ duration: 1 }}
             className="text-center mb-20"
           >
-            <h2 className="text-4xl md:text-5xl font-serif mb-6 text-foreground">What Victor brings to every page.</h2>
+            <h2 className="text-4xl md:text-5xl font-serif mb-6 text-foreground">What Reedr brings to every page.</h2>
             <p className="text-lg text-muted-foreground max-w-xl mx-auto">
               Not a search box. Not a chatbot. A second set of eyes that's already read the room.
             </p>
@@ -301,19 +304,19 @@ export default function Home() {
           transition={{ duration: 1 }}
         >
           <p className="text-3xl md:text-5xl font-serif italic leading-tight text-foreground/60 mb-10">
-            "I opened a Japanese research paper and just asked Victor what it said. He explained the whole thing in plain English in about ten seconds."
+            "I opened a Japanese research paper and just asked Reedr what it said. He explained the whole thing in plain English in about ten seconds."
           </p>
           <footer className="text-sm tracking-widest uppercase text-accent/70 font-semibold">— Early user</footer>
         </motion.blockquote>
       </section>
 
-      {/* What makes Victor different */}
+      {/* What makes Reedr different */}
       <section className="py-24 px-6 md:px-12 border-t border-border">
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-12">
           {[
             {
               title: "He reads first.",
-              desc: "Victor processes the page the moment you land. By the time you open the chat, he already knows the content — you don't have to explain anything."
+              desc: "Reedr processes the page the moment you land. By the time you open the chat, he already knows the content — you don't have to explain anything."
             },
             {
               title: "Your history, your device.",
@@ -321,7 +324,7 @@ export default function Home() {
             },
             {
               title: "Chrome, Edge, or Firefox.",
-              desc: "One zip works across all three browsers. Download, load it in, and Victor appears on the next page you visit. No sign-in, no subscription."
+              desc: "One zip works across all major browsers. Download, load it in, and Reedr appears on the next page you visit. No sign-in, no subscription."
             }
           ].map((item, i) => (
             <motion.div
@@ -358,7 +361,7 @@ export default function Home() {
                   <span className="text-accent tracking-widest uppercase text-xs font-semibold">Browser Extension</span>
                 </div>
                 <h2 className="text-4xl md:text-5xl font-serif leading-tight text-foreground">
-                  Victor rides along<br />
+                  Reedr rides along<br />
                   <span className="italic text-accent">everywhere you go.</span>
                 </h2>
                 <p className="text-lg text-muted-foreground leading-relaxed">
@@ -368,7 +371,7 @@ export default function Home() {
 
               {/* Browser picker */}
               <div className="flex gap-2 flex-wrap">
-                {(['chrome', 'edge', 'firefox'] as Browser[]).map((b) => (
+                {(['chrome', 'edge', 'firefox', 'safari', 'brave', 'opera'] as Browser[]).map((b) => (
                   <button
                     key={b}
                     onClick={() => setBrowser(b)}
@@ -409,7 +412,7 @@ export default function Home() {
                 <div className="flex items-center gap-3 px-4 py-3 bg-[#13132b] border-b border-[#2a2a4a]">
                   <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#6d5ffa] to-[#a78bfa] flex items-center justify-center text-white text-sm font-bold">V</div>
                   <div>
-                    <div className="text-white text-sm font-semibold">Victor</div>
+                    <div className="text-white text-sm font-semibold">Reedr</div>
                     <div className="text-[#6060a0] text-xs">theverge.com</div>
                   </div>
                 </div>
@@ -434,7 +437,7 @@ export default function Home() {
                   </div>
                 </div>
                 <div className="px-4 pb-4 flex gap-2">
-                  <div className="flex-1 bg-[#09091a] border border-[#2a2a4a] rounded-xl px-3 py-2 text-[#404060] text-sm">Ask Victor anything about this page…</div>
+                  <div className="flex-1 bg-[#09091a] border border-[#2a2a4a] rounded-xl px-3 py-2 text-[#404060] text-sm">Ask Reedr anything about this page…</div>
                   <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#6d5ffa] to-[#a78bfa] flex items-center justify-center">
                     <span className="text-white text-xs">→</span>
                   </div>
@@ -452,7 +455,7 @@ export default function Home() {
 
         <div className="max-w-4xl mx-auto text-center relative z-10 flex flex-col items-center gap-10">
           <h2 className="text-5xl md:text-7xl font-serif leading-tight text-foreground">
-            Meet Victor on<br /><span className="italic text-accent">your next page.</span>
+            Meet Reedr on<br /><span className="italic text-accent">your next page.</span>
           </h2>
 
           <p className="text-xl text-muted-foreground max-w-xl leading-relaxed">
@@ -461,7 +464,7 @@ export default function Home() {
 
           {/* Browser picker */}
           <div className="flex gap-3 flex-wrap justify-center">
-            {(['chrome', 'edge', 'firefox'] as Browser[]).map((b) => (
+            {(['chrome', 'edge', 'firefox', 'safari', 'brave', 'opera'] as Browser[]).map((b) => (
               <button
                 key={b}
                 onClick={() => setBrowser(b)}

@@ -9,9 +9,9 @@ const SCENE_DURATIONS = [
   3500, // 0: Browser article page
   2000, // 1: V button appears
   2500, // 2: Chat panel slides open
-  4500, // 3: Victor greets
+  4500, // 3: Reedr greets
   3000, // 4: User types
-  5000, // 5: Victor streams reply
+  5000, // 5: Reedr streams reply
   3000, // 6: Copy button & click
   5000, // 7: Logo & tagline
 ];
@@ -167,7 +167,7 @@ export default function DemoVideo() {
           </motion.div>
         </div>
 
-        {/* Victor Chat Panel */}
+        {/* Reedr Chat Panel */}
         <motion.div
           className="absolute top-12 right-0 bottom-0 w-[400px] bg-[#fdfdfd] border-l border-gray-200 shadow-[-10px_0_30px_rgba(0,0,0,0.05)] z-30 flex flex-col"
           initial={{ x: "100%" }}
@@ -178,7 +178,7 @@ export default function DemoVideo() {
           <div className="h-16 border-b border-gray-200 flex items-center px-6 justify-between bg-white shadow-sm z-10">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-full bg-gradient-accent flex items-center justify-center text-white font-bold text-sm shadow-md">V</div>
-              <span className="font-bold text-gray-800 text-lg">Victor</span>
+              <span className="font-bold text-gray-800 text-lg">Reedr</span>
             </div>
             <div className="w-5 h-5 text-gray-400">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
@@ -254,7 +254,7 @@ export default function DemoVideo() {
           <div className="p-4 bg-white border-t border-gray-100 relative z-20">
             <div className={`w-full h-14 bg-[#f8f9fa] border rounded-xl flex items-center px-4 transition-colors duration-300 ${scene === 4 ? 'border-[#6d5ffa] shadow-[0_0_0_2px_rgba(109,95,250,0.1)]' : 'border-gray-200'}`}>
               <div className="text-gray-400 text-[15px]">
-                {scene < 4 ? "Ask Victor about this page..." : ""}
+                {scene < 4 ? "Ask Reedr about this page..." : ""}
               </div>
             </div>
             <div className="absolute right-6 top-1/2 -translate-y-1/2 w-9 h-9 rounded-lg bg-[#0d0d22] flex items-center justify-center shadow-md">

@@ -8,29 +8,29 @@ export default function Privacy() {
       title: "1. The short version",
       content: (
         <p className="mb-4">
-          Victor reads web pages locally in your browser and sends your messages to our API server, which forwards them to OpenAI to generate replies. Your conversation history is saved only in your browser's local storage — never on our servers. We collect no personal information, require no account, and sell nothing.
+          Reedr reads web pages locally in your browser and sends your messages to our API server, which forwards them to OpenAI to generate replies. Your conversation history is saved only in your browser's local storage — never on our servers. We collect no personal information, require no account, and sell nothing.
         </p>
       )
     },
     {
-      title: "2. What Victor reads",
+      title: "2. What Reedr reads",
       content: (
         <>
           <p className="mb-4">
-            When you visit a page, Victor reads the visible text content of that page inside your browser. This happens locally — the page text is not sent anywhere until you open the chat and ask a question.
+            When you visit a page, Reedr reads the visible text content of that page inside your browser. This happens locally — the page text is not sent anywhere until you open the chat and ask a question.
           </p>
           <p className="mb-4">
-            When you send a message, Victor transmits the following to our API server:
+            When you send a message, Reedr transmits the following to our API server:
           </p>
           <ul className="list-disc pl-6 space-y-3 mb-4">
             <li><strong>Your message</strong> — the text you typed.</li>
-            <li><strong>The conversation so far</strong> — prior messages in the current session, so Victor can maintain context.</li>
-            <li><strong>A snippet of the page text</strong> — up to 5,000 characters of the page's visible content, so Victor knows what you're discussing.</li>
-            <li><strong>The page URL and title</strong> — used to identify the page in Victor's reply.</li>
-            <li><strong>Your browser's language setting</strong> — so Victor can respond in the right language.</li>
+            <li><strong>The conversation so far</strong> — prior messages in the current session, so Reedr can maintain context.</li>
+            <li><strong>A snippet of the page text</strong> — up to 5,000 characters of the page's visible content, so Reedr knows what you're discussing.</li>
+            <li><strong>The page URL and title</strong> — used to identify the page in Reedr's reply.</li>
+            <li><strong>Your browser's language setting</strong> — so Reedr can respond in the right language.</li>
           </ul>
           <p>
-            This information is passed to OpenAI's API to generate Victor's response and is not stored on our servers beyond the duration of the API call.
+            This information is passed to OpenAI's API to generate Reedr's response and is not stored on our servers beyond the duration of the API call.
           </p>
         </>
       )
@@ -40,16 +40,16 @@ export default function Privacy() {
       content: (
         <>
           <p className="mb-4">
-            Victor automatically saves your conversations to <strong>your browser's local storage</strong> using the standard browser extension storage API (<code>chrome.storage.local</code> / <code>browser.storage.local</code>). This means:
+            Reedr automatically saves your conversations to <strong>your browser's local storage</strong> using the standard browser extension storage API (<code>chrome.storage.local</code> / <code>browser.storage.local</code>). This means:
           </p>
           <ul className="list-disc pl-6 space-y-3 mb-4">
             <li>Your history lives entirely on your device.</li>
             <li>We cannot read, access, or delete it — it is not synced to any server.</li>
-            <li>You can clear your entire history at any time from the History tab inside Victor's chat panel.</li>
+            <li>You can clear your entire history at any time from the History tab inside Reedr's chat panel.</li>
             <li>Uninstalling the extension removes all stored data from your device.</li>
           </ul>
           <p>
-            Victor keeps a maximum of 100 past sessions. Once you reach that limit, the oldest session is automatically removed to make room for new ones.
+            Reedr keeps a maximum of 100 past sessions. Once you reach that limit, the oldest session is automatically removed to make room for new ones.
           </p>
         </>
       )
@@ -58,16 +58,16 @@ export default function Privacy() {
       title: "4. Browser permissions",
       content: (
         <>
-          <p className="mb-4">Victor requests the following browser extension permissions:</p>
+          <p className="mb-4">Reedr requests the following browser extension permissions:</p>
           <ul className="list-disc pl-6 space-y-3 mb-4">
             <li>
-              <strong>activeTab / scripting:</strong> Allows Victor to read the text content of the page you are currently viewing, and to inject the floating chat button. Victor only reads the active tab — it cannot read tabs you have not opened.
+              <strong>activeTab / scripting:</strong> Allows Reedr to read the text content of the page you are currently viewing, and to inject the floating chat button. Reedr only reads the active tab — it cannot read tabs you have not opened.
             </li>
             <li>
-              <strong>storage:</strong> Allows Victor to save your conversation history locally in your browser. No data is written to any external server.
+              <strong>storage:</strong> Allows Reedr to save your conversation history locally in your browser. No data is written to any external server.
             </li>
           </ul>
-          <p>Victor does not request access to your camera, microphone, downloads, bookmarks, browsing history, or any other browser data.</p>
+          <p>Reedr does not request access to your camera, microphone, downloads, bookmarks, browsing history, or any other browser data.</p>
         </>
       )
     },
@@ -76,7 +76,7 @@ export default function Privacy() {
       content: (
         <>
           <p className="mb-4">
-            Victor's responses are generated by OpenAI's API. When you send a message, the content described in Section 2 is transmitted to OpenAI for processing. OpenAI's handling of this data is governed by their{' '}
+            Reedr's responses are generated by OpenAI's API. When you send a message, the content described in Section 2 is transmitted to OpenAI for processing. OpenAI's handling of this data is governed by their{' '}
             <a href="https://openai.com/policies/privacy-policy" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">Privacy Policy</a>.
           </p>
           <p className="mb-4">
@@ -118,7 +118,7 @@ export default function Privacy() {
       title: "8. Children's privacy",
       content: (
         <p className="mb-4">
-          Victor is not intended for children under the age of 13. We do not knowingly collect information from children under 13. If you believe a child under 13 has used Victor in a way that concerns you, please contact us at{' '}
+          Reedr is not intended for children under the age of 13. We do not knowingly collect information from children under 13. If you believe a child under 13 has used Reedr in a way that concerns you, please contact us at{' '}
           <a href="mailto:support@victor.ai.life" className="text-primary hover:underline">support@victor.ai.life</a>.
         </p>
       )
@@ -129,7 +129,7 @@ export default function Privacy() {
         <>
           <p className="mb-4">Because we collect no personal account information and store no conversation data on our servers, most data rights are exercised directly on your device:</p>
           <ul className="list-disc pl-6 space-y-3 mb-4">
-            <li><strong>Clear history:</strong> Open Victor's chat panel → History tab → Clear all.</li>
+            <li><strong>Clear history:</strong> Open Reedr's chat panel → History tab → Clear all.</li>
             <li><strong>Remove all data:</strong> Uninstall the extension from your browser's extension manager.</li>
             <li><strong>Revoke permissions:</strong> Remove the extension's site access or storage permissions from your browser settings at any time.</li>
           </ul>
@@ -145,7 +145,7 @@ export default function Privacy() {
       title: "10. Changes to this policy",
       content: (
         <p className="mb-4">
-          We may update this Privacy Policy from time to time. When we do, we will update the "Last updated" date below. Continued use of Victor after any changes constitutes acceptance of the updated policy. For material changes, we will note them prominently on this page.
+          We may update this Privacy Policy from time to time. When we do, we will update the "Last updated" date below. Continued use of Reedr after any changes constitutes acceptance of the updated policy. For material changes, we will note them prominently on this page.
         </p>
       )
     },

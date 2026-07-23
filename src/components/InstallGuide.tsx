@@ -2,12 +2,15 @@ import { useState, useEffect, type ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createPortal } from 'react-dom';
 
-type Browser = 'chrome' | 'edge' | 'firefox';
+type Browser = 'chrome' | 'edge' | 'firefox' | 'safari' | 'brave' | 'opera';
 
 export function detectBrowser(): Browser {
   const ua = navigator.userAgent;
-  if (ua.includes('Edg/')) return 'edge';
-  if (ua.includes('Firefox/')) return 'firefox';
+  if (ua.includes('Edg/') || ua.includes('EdgA/') || ua.includes('EdgiOS/')) return 'edge';
+  if (ua.includes('Firefox/') || ua.includes('FxiOS/')) return 'firefox';
+  if (ua.includes('OPR/') || ua.includes('Opera')) return 'opera';
+  if (ua.includes('Brave') || (navigator as any).brave) return 'brave';
+  if (ua.includes('Safari/') && !ua.includes('Chrome/') && !ua.includes('Chromium/')) return 'safari';
   return 'chrome';
 }
 
@@ -15,12 +18,22 @@ const BROWSER_LABELS: Record<Browser, string> = {
   chrome: 'Chrome',
   edge: 'Edge',
   firefox: 'Firefox',
+  safari: 'Safari',
+  brave: 'Brave',
+  opera: 'Opera',
 };
 
 function extensionsPageUrl(browser: Browser) {
   if (browser === 'edge') return 'edge://extensions';
   if (browser === 'firefox') return 'about:debugging#/runtime/this-firefox';
+  if (browser === 'opera') return 'opera://extensions';
+  if (browser === 'brave') return 'brave://extensions';
+  if (browser === 'safari') return 'Safari → Settings → Extensions';
   return 'chrome://extensions';
+}
+
+function isChromium(browser: Browser) {
+  return browser === 'chrome' || browser === 'edge' || browser === 'brave' || browser === 'opera';
 }
 
 interface InstallModalProps {
@@ -45,8 +58,10 @@ export function InstallModal({ onClose, initialBrowser }: InstallModalProps) {
   }, [onClose]);
 
   const extUrl = extensionsPageUrl(browser);
+  const chromium = isChromium(browser);
 
   async function copyExtensionsUrl() {
+    if (browser === 'safari') return;
     try {
       await navigator.clipboard.writeText(extUrl);
       setCopied(true);
@@ -55,8 +70,6 @@ export function InstallModal({ onClose, initialBrowser }: InstallModalProps) {
       // ignore — user can still type it
     }
   }
-
-  const chromeOrEdge = browser === 'chrome' || browser === 'edge';
 
   return createPortal(
     <AnimatePresence>
@@ -79,16 +92,15 @@ export function InstallModal({ onClose, initialBrowser }: InstallModalProps) {
         className="fixed inset-0 z-[9999] flex items-center justify-center p-4 pointer-events-none"
       >
         <div
-          className="bg-[#13132b] border border-[#2a2a4a] rounded-2xl shadow-2xl w-full max-w-lg pointer-events-auto flex flex-col overflow-hidden"
+          className="bg-[#13132b] border border-[#2a2a4a] rounded-2xl shadow-2xl w-full max-w-lg pointer-events-auto flex flex-col overflow-hidden max-h-[90vh]"
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-[#2a2a4a]">
             <div className="flex items-center gap-3">
-              <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#6d5ffa] to-[#a78bfa] flex items-center justify-center text-white text-xs font-bold">V</div>
+              <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#6d5ffa] to-[#a78bfa] flex items-center justify-center text-white text-xs font-bold">R</div>
               <div>
-                <p className="text-white font-semibold text-sm">Install Victor</p>
-                <p className="text-[#6060a0] text-xs">About 30 seconds</p>
+                <p className="text-white font-semibold text-sm">Install Reedr</p>
+                <p className="text-[#6060a0] text-xs">Works across major browsers</p>
               </div>
             </div>
             <button
@@ -100,96 +112,109 @@ export function InstallModal({ onClose, initialBrowser }: InstallModalProps) {
             </button>
           </div>
 
-          {/* Browser picker — detected automatically, easy to switch */}
-          <div className="flex items-center gap-2 px-6 pt-5">
-            <span className="text-[#6060a0] text-xs mr-1">Browser:</span>
-            {(['chrome', 'edge', 'firefox'] as Browser[]).map((b) => (
-              <button
-                key={b}
-                onClick={() => setBrowser(b)}
-                className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
-                  browser === b
-                    ? 'border-[#6d5ffa] bg-[#6d5ffa]/20 text-[#a78bfa]'
-                    : 'border-[#2a2a4a] text-[#6060a0] hover:border-[#6d5ffa]/40'
-                }`}
-              >
-                {BROWSER_LABELS[b]}
-              </button>
-            ))}
-          </div>
+          <div className="overflow-y-auto">
+            <div className="flex flex-wrap items-center gap-2 px-6 pt-5">
+              <span className="text-[#6060a0] text-xs mr-1">Browser:</span>
+              {(Object.keys(BROWSER_LABELS) as Browser[]).map((b) => (
+                <button
+                  key={b}
+                  onClick={() => setBrowser(b)}
+                  className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
+                    browser === b
+                      ? 'border-[#6d5ffa] bg-[#6d5ffa]/20 text-[#a78bfa]'
+                      : 'border-[#2a2a4a] text-[#6060a0] hover:border-[#6d5ffa]/40'
+                  }`}
+                >
+                  {BROWSER_LABELS[b]}
+                </button>
+              ))}
+            </div>
 
-          {/* Three clear steps */}
-          <div className="px-6 py-5 flex flex-col gap-5">
-            <Step n={1} title="Unzip the download">
-              Open your Downloads folder and double-click{' '}
-              <code className="text-[#a78bfa] font-mono text-[12px]">victor-extension.zip</code>.
-              You’ll get a folder named{' '}
-              <code className="text-[#a78bfa] font-mono text-[12px]">victor-extension</code>.
-            </Step>
+            <div className="px-6 py-5 flex flex-col gap-5">
+              <Step n={1} title="Unzip the download">
+                Open your Downloads folder and double-click{' '}
+                <code className="text-[#a78bfa] font-mono text-[12px]">reedr-extension.zip</code>.
+                You’ll get a folder named{' '}
+                <code className="text-[#a78bfa] font-mono text-[12px]">reedr-extension</code>.
+              </Step>
 
-            <Step n={2} title={`Open ${BROWSER_LABELS[browser]} extensions`}>
-              {chromeOrEdge ? (
+              {chromium && (
                 <>
-                  <p className="mb-3">
-                    Paste this in a new tab, then turn on <strong className="text-white">Developer mode</strong>:
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <code className="flex-1 bg-[#0d0d1e] border border-[#2a2a4a] rounded-lg px-3 py-2 text-[#a78bfa] font-mono text-xs truncate">
-                      {extUrl}
-                    </code>
-                    <button
-                      onClick={copyExtensionsUrl}
-                      className="shrink-0 text-xs px-3 py-2 rounded-lg bg-[#6d5ffa] text-white font-medium hover:bg-[#5a4de0] transition-colors"
-                    >
-                      {copied ? 'Copied' : 'Copy'}
-                    </button>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <p className="mb-3">
-                    Paste this in a new tab, then click <strong className="text-white">Load Temporary Add-on…</strong>:
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <code className="flex-1 bg-[#0d0d1e] border border-[#2a2a4a] rounded-lg px-3 py-2 text-[#a78bfa] font-mono text-[11px] truncate">
-                      {extUrl}
-                    </code>
-                    <button
-                      onClick={copyExtensionsUrl}
-                      className="shrink-0 text-xs px-3 py-2 rounded-lg bg-[#6d5ffa] text-white font-medium hover:bg-[#5a4de0] transition-colors"
-                    >
-                      {copied ? 'Copied' : 'Copy'}
-                    </button>
-                  </div>
-                  <p className="text-[#c4a35a] text-[11px] mt-2 leading-relaxed">
-                    Firefox temporary add-ons are removed when you quit the browser — just load the folder again after restart.
-                  </p>
+                  <Step n={2} title={`Open ${BROWSER_LABELS[browser]} extensions`}>
+                    <p className="mb-3">
+                      Paste this in a new tab, then turn on <strong className="text-white">Developer mode</strong>:
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <code className="flex-1 bg-[#0d0d1e] border border-[#2a2a4a] rounded-lg px-3 py-2 text-[#a78bfa] font-mono text-xs truncate">
+                        {extUrl}
+                      </code>
+                      <button
+                        onClick={copyExtensionsUrl}
+                        className="shrink-0 text-xs px-3 py-2 rounded-lg bg-[#6d5ffa] text-white font-medium hover:bg-[#5a4de0] transition-colors"
+                      >
+                        {copied ? 'Copied' : 'Copy'}
+                      </button>
+                    </div>
+                  </Step>
+                  <Step n={3} title="Load the folder">
+                    Click <strong className="text-white">Load unpacked</strong>, then choose the{' '}
+                    <code className="text-[#a78bfa] font-mono text-[12px]">reedr-extension</code> folder.
+                  </Step>
                 </>
               )}
-            </Step>
 
-            <Step n={3} title={chromeOrEdge ? 'Load the folder' : 'Select manifest.json'}>
-              {chromeOrEdge ? (
+              {browser === 'firefox' && (
                 <>
-                  Click <strong className="text-white">Load unpacked</strong>, then choose the{' '}
-                  <code className="text-[#a78bfa] font-mono text-[12px]">victor-extension</code> folder.
-                </>
-              ) : (
-                <>
-                  Select{' '}
-                  <code className="text-[#a78bfa] font-mono text-[12px]">manifest.json</code> inside the{' '}
-                  <code className="text-[#a78bfa] font-mono text-[12px]">victor-extension</code> folder.
+                  <Step n={2} title="Open Firefox debugging">
+                    <p className="mb-3">
+                      Paste this in a new tab, then click <strong className="text-white">Load Temporary Add-on…</strong>:
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <code className="flex-1 bg-[#0d0d1e] border border-[#2a2a4a] rounded-lg px-3 py-2 text-[#a78bfa] font-mono text-[11px] truncate">
+                        {extUrl}
+                      </code>
+                      <button
+                        onClick={copyExtensionsUrl}
+                        className="shrink-0 text-xs px-3 py-2 rounded-lg bg-[#6d5ffa] text-white font-medium hover:bg-[#5a4de0] transition-colors"
+                      >
+                        {copied ? 'Copied' : 'Copy'}
+                      </button>
+                    </div>
+                    <p className="text-[#c4a35a] text-[11px] mt-2 leading-relaxed">
+                      Firefox temporary add-ons are removed when you quit the browser — just load the folder again after restart.
+                    </p>
+                  </Step>
+                  <Step n={3} title="Select manifest.json">
+                    Select{' '}
+                    <code className="text-[#a78bfa] font-mono text-[12px]">manifest.json</code> inside the{' '}
+                    <code className="text-[#a78bfa] font-mono text-[12px]">reedr-extension</code> folder.
+                  </Step>
                 </>
               )}
-            </Step>
 
-            <div className="bg-[#0d2218] border border-[#28c840]/30 rounded-xl p-4 flex items-start gap-3">
-              <span className="text-xl leading-none mt-0.5">✓</span>
-              <div>
-                <p className="text-[#28c840] font-semibold text-sm">You’re done</p>
-                <p className="text-[#8080a0] text-xs leading-relaxed mt-1">
-                  Look for the purple <strong className="text-white">V</strong> button in the bottom-right of any page. Click it to chat — Victor already read the page.
-                </p>
+              {browser === 'safari' && (
+                <>
+                  <Step n={2} title="Enable the Develop menu">
+                    In Safari: <strong className="text-white">Settings → Advanced → Show features for web developers</strong>.
+                    Then open <strong className="text-white">Develop → Developer settings</strong> and allow unsigned extensions if needed.
+                  </Step>
+                  <Step n={3} title="Load Reedr in Safari">
+                    On macOS Safari 16+, convert or load the Web Extension package with Xcode’s Safari Web Extension support, or use{' '}
+                    <strong className="text-white">Develop → Show Extension Builder / Allow Unsigned Extensions</strong> and add the{' '}
+                    <code className="text-[#a78bfa] font-mono text-[12px]">reedr-extension</code> folder.
+                    Enable Reedr under <strong className="text-white">Safari → Settings → Extensions</strong>.
+                  </Step>
+                </>
+              )}
+
+              <div className="bg-[#0d2218] border border-[#28c840]/30 rounded-xl p-4 flex items-start gap-3">
+                <span className="text-xl leading-none mt-0.5">✓</span>
+                <div>
+                  <p className="text-[#28c840] font-semibold text-sm">You’re done</p>
+                  <p className="text-[#8080a0] text-xs leading-relaxed mt-1">
+                    Look for the purple <strong className="text-white">R</strong> button in the bottom-right of any page. Click it to chat — Reedr already read the page.
+                  </p>
+                </div>
               </div>
             </div>
           </div>

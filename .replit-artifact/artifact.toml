@@ -1,6 +1,6 @@
 kind = "web"
 previewPath = "/victor-web/"
-title = "Victor Website"
+title = "Reedr Website"
 version = "1.0.0"
 id = "artifacts/victor-web"
 router = "path"

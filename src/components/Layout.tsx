@@ -13,8 +13,8 @@ export const Layout: FC<LayoutProps> = ({ children }) => {
 
       <header className="absolute top-0 left-0 right-0 z-40 w-full pt-6 pb-4 px-6 md:px-12 flex items-center justify-between border-b border-border/60">
         <Link href="/" className="flex items-center gap-3">
-          <img src={logoSrc} alt="Victor" className="h-10 w-10 rounded-xl object-cover" />
-          <span className="font-sans font-semibold text-lg tracking-wider text-foreground uppercase">Victor</span>
+          <img src={logoSrc} alt="Reedr" className="h-10 w-10 rounded-xl object-cover" />
+          <span className="font-sans font-semibold text-lg tracking-wider text-foreground uppercase">Reedr</span>
         </Link>
 
         <nav className="flex items-center gap-6 md:gap-10 text-sm font-medium tracking-wide z-10">
@@ -36,7 +36,7 @@ export const Layout: FC<LayoutProps> = ({ children }) => {
       <footer className="bg-secondary/60 border-t border-border py-16 px-6 md:px-12 relative z-10">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-end gap-12">
           <div className="flex flex-col gap-5 max-w-sm">
-            <img src={logoSrc} alt="Victor" className="h-12 w-12 rounded-xl object-cover" />
+            <img src={logoSrc} alt="Reedr" className="h-12 w-12 rounded-xl object-cover" />
             <p className="text-muted-foreground text-sm leading-relaxed">
               A browser extension that reads every page you visit and is always ready to talk about it.
             </p>
@@ -58,7 +58,7 @@ export const Layout: FC<LayoutProps> = ({ children }) => {
         </div>
 
         <div className="max-w-7xl mx-auto mt-12 pt-8 border-t border-border flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-muted-foreground/60">
-          <p>© {new Date().getFullYear()} Victor. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} Reedr. All rights reserved.</p>
           <p>Works on Chrome, Edge, and Firefox.</p>
         </div>
       </footer>
