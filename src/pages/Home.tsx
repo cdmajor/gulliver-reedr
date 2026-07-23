@@ -66,7 +66,7 @@ const features = [
   },
   {
     icon: "🧩",
-    title: "Chrome, Edge, and Firefox",
+    title: "Chrome, Edge, Firefox, Brave, and Opera",
     desc: "One download works across all major browsers. Reedr runs as a local extension — nothing leaves your device, no account required."
   }
 ];
@@ -121,15 +121,33 @@ export default function Home() {
               Reedr lives in your browser as a floating button. Every page you visit, he reads it before you say a word — then he's ready to discuss, explain, or dig into it with you.
             </motion.p>
 
-            <motion.div variants={fadeUp} className="flex flex-col sm:flex-row gap-4 pt-4">
-              <button
-                type="button"
-                onClick={() => handleDownload(browser)}
-                className="bg-primary text-primary-foreground px-8 py-4 flex items-center justify-center gap-3 rounded-full hover:bg-primary/80 transition-colors duration-300 w-full sm:w-auto font-medium"
-              >
-                <span>{BROWSER_LABELS[browser].icon}</span>
-                <span className="tracking-wide">{BROWSER_LABELS[browser].cta}</span>
-              </button>
+            <motion.div variants={fadeUp} className="flex flex-col gap-4 pt-4">
+              <div className="flex flex-col sm:flex-row gap-4">
+                <button
+                  type="button"
+                  onClick={() => handleDownload(browser)}
+                  className="bg-primary text-primary-foreground px-8 py-4 flex items-center justify-center gap-3 rounded-full hover:bg-primary/80 transition-colors duration-300 w-full sm:w-auto font-medium"
+                >
+                  <span>{BROWSER_LABELS[browser].icon}</span>
+                  <span className="tracking-wide">{BROWSER_LABELS[browser].cta}</span>
+                </button>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-muted-foreground text-xs">Also works on</span>
+                {(['chrome', 'edge', 'firefox', 'brave', 'opera'] as Browser[])
+                  .filter(b => b !== browser)
+                  .map(b => (
+                    <button
+                      key={b}
+                      type="button"
+                      onClick={() => handleDownload(b)}
+                      className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground border border-border hover:border-accent/50 rounded-full px-3 py-1 transition-colors"
+                    >
+                      <span>{BROWSER_LABELS[b].icon}</span>
+                      <span>{BROWSER_LABELS[b].name}</span>
+                    </button>
+                  ))}
+              </div>
             </motion.div>
           </motion.div>
 
