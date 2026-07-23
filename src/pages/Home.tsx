@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Layout } from '@/components/Layout';
 import { InstallModal, detectBrowser } from '@/components/InstallGuide';
-import DemoVideo from '@/pages/DemoVideo';
 import heroImage from '@/assets/hero-browser.jpg';
 
 type Browser = 'chrome' | 'edge' | 'firefox' | 'safari' | 'brave' | 'opera';
@@ -176,36 +175,6 @@ export default function Home() {
           >
             Most AI assistants make you paste in the content and explain the context. Reedr skips all that. He's already read the page — the article, the product, the thread, the doc — and he's waiting for you to ask.
           </motion.p>
-        </div>
-      </section>
-
-      {/* Demo video */}
-      <section className="py-24 px-6 md:px-12 border-t border-border">
-        <div className="max-w-5xl mx-auto flex flex-col items-center gap-10">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-100px" }}
-            transition={{ duration: 1 }}
-            className="text-center"
-          >
-            <h2 className="text-4xl md:text-5xl font-serif mb-4 text-foreground">See it in action.</h2>
-            <p className="text-lg text-muted-foreground max-w-lg mx-auto">
-              From page load to answered question in three clicks.
-            </p>
-          </motion.div>
-          <motion.div
-            initial={{ opacity: 0, scale: 0.97 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true, margin: "-80px" }}
-            transition={{ duration: 1, delay: 0.2 }}
-            className="w-full rounded-2xl overflow-hidden border border-border shadow-2xl"
-            style={{ aspectRatio: '16/9' }}
-          >
-            <div className="w-full h-full" style={{ height: '100%' }}>
-              <DemoVideo />
-            </div>
-          </motion.div>
         </div>
       </section>
 
