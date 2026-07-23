@@ -230,7 +230,7 @@ export default function Home() {
               {
                 num: "Step one",
                 title: "Install the extension.",
-                desc: "Download the zip and load it into Chrome, Edge, or Firefox. No account, no API key, nothing to configure. Takes under a minute."
+                desc: "Download the zip and load it into Chrome, Edge, or Firefox. Load the extension and start chatting. Optional account unlocks Reedr Plus memory. Takes under a minute."
               },
               {
                 num: "Step two",
@@ -449,7 +449,44 @@ export default function Home() {
       </section>
 
       {/* CTA */}
-      <section id="download" className="py-32 px-6 md:px-12 relative overflow-hidden border-t border-border">
+      
+      {/* Memory + Plus */}
+      <section className="py-24 border-t border-[#1a1a38]">
+        <div className="max-w-5xl mx-auto px-4">
+          <div className="text-center mb-14">
+            <h2 className="text-4xl md:text-5xl font-serif mb-6 text-foreground">Memory that stays organized.</h2>
+            <p className="text-[#9090b8] text-lg max-w-2xl mx-auto">
+              Reedr saves chat threads and page summaries inside the extension — grouped by site, ready to reopen anytime.
+            </p>
+          </div>
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="rounded-2xl border border-[#2a2a4a] bg-[#13132b] p-8">
+              <p className="text-xs uppercase tracking-widest text-[#8080a0] mb-2">Free</p>
+              <h3 className="text-2xl font-semibold text-foreground mb-2">Get started</h3>
+              <p className="text-[#9090b8] text-sm mb-6">$0 — included with the extension</p>
+              <ul className="space-y-3 text-sm text-[#c0c0e8]">
+                <li>25 saved chat threads</li>
+                <li>10 page summaries</li>
+                <li>40 messages kept per thread</li>
+                <li>Library organized by site</li>
+              </ul>
+            </div>
+            <div className="rounded-2xl border border-[#6d5ffa] bg-[#13132b] p-8 shadow-[0_0_0_1px_rgba(109,95,250,0.25)]">
+              <p className="text-xs uppercase tracking-widest text-[#a78bfa] mb-2">Plus</p>
+              <h3 className="text-2xl font-semibold text-foreground mb-2">More memory</h3>
+              <p className="text-[#9090b8] text-sm mb-6">$6/mo or $60/year</p>
+              <ul className="space-y-3 text-sm text-[#c0c0e8]">
+                <li>1,000 saved chat threads</li>
+                <li>500 page summaries</li>
+                <li>200 messages kept per thread</li>
+                <li>Upgrade from Reedr Settings</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+<section id="download" className="py-32 px-6 md:px-12 relative overflow-hidden border-t border-border">
         <div className="absolute inset-0 bg-secondary/40 pointer-events-none" />
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[80vw] h-[300px] bg-accent/6 blur-[100px] rounded-full pointer-events-none" />
 

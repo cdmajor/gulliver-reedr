@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Reedr — AI Web Companion",
-  "version": "1.0.1",
-  "description": "Reedr reads every page you visit and is always ready to discuss, explain, or explore it with you.",
+  "version": "1.1.0",
+  "description": "Reedr reads every page you visit, chats about it, and saves organized threads and summaries — with Free and Plus memory tiers.",
   "icons": {
     "16": "icon16.png",
     "48": "icon48.png",
@@ -25,14 +25,14 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["content.js"],
+      "js": ["memory.js", "content.js"],
       "run_at": "document_idle",
       "all_frames": false
     }
   ],
   "web_accessible_resources": [
     {
-      "resources": ["icon16.png", "icon48.png", "icon128.png"],
+      "resources": ["icon16.png", "icon48.png", "icon128.png", "memory.js"],
       "matches": ["<all_urls>"]
     }
   ]

@@ -96,31 +96,45 @@
     catch { return url; }
   }
 
-  // ── History storage ───────────────────────────────────────────────────────────
-  const STORAGE_KEY = "reedr_history";
-  const MAX_SESSIONS = 100;
+  // ── Memory (threads + summaries) via memory.js ────────────────────────────────
+  const Mem = globalThis.ReedrMemory;
+  if (!Mem) console.error("ReedrMemory missing — ensure memory.js loads before content.js");
 
   function generateId() {
-    return "s-" + Date.now() + "-" + Math.random().toString(36).slice(2, 7);
+    return Mem ? Mem.generateId("s-") : ("s-" + Date.now() + "-" + Math.random().toString(36).slice(2, 7));
   }
 
   function loadHistory(cb) {
-    browserAPI.storage.local.get([STORAGE_KEY]).then((result) => {
-      cb(result[STORAGE_KEY] || []);
-    });
+    if (!Mem) { cb([]); return; }
+    Mem.loadThreads().then(cb).catch(() => cb([]));
   }
 
   function saveSession(session, cb) {
-    if (!session || session.messages.length === 0) { if (cb) cb(); return; }
-    loadHistory((history) => {
-      const filtered = history.filter((s) => s.id !== session.id);
-      const updated  = [session, ...filtered].slice(0, MAX_SESSIONS);
-      browserAPI.storage.local.set({ [STORAGE_KEY]: updated }).then(() => { if (cb) cb(); });
-    });
+    if (!Mem) { if (cb) cb(); return; }
+    Mem.saveThread(session).then((result) => {
+      if (result?.atCap) showMemoryToast("Thread saved — Free memory is full. Upgrade to Plus for more.");
+      if (cb) cb(result);
+    }).catch(() => { if (cb) cb(); });
   }
 
   function clearHistory(cb) {
-    browserAPI.storage.local.set({ [STORAGE_KEY]: [] }).then(() => { if (cb) cb(); });
+    if (!Mem) { if (cb) cb(); return; }
+    Mem.clearThreads().then(() => { if (cb) cb(); });
+  }
+
+  function showMemoryToast(msg) {
+    if (!shadow) return;
+    let el = shadow.getElementById("v-memory-toast");
+    if (!el) {
+      el = document.createElement("div");
+      el.id = "v-memory-toast";
+      el.style.cssText = "position:absolute;left:16px;right:16px;bottom:78px;z-index:5;background:#1a1a38;border:1px solid #6d5ffa;color:#e0e0f8;font-size:12px;line-height:1.45;padding:10px 12px;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.4);";
+      shadow.getElementById("v-panel")?.appendChild(el);
+    }
+    el.textContent = msg;
+    el.style.display = "block";
+    clearTimeout(el._t);
+    el._t = setTimeout(() => { el.style.display = "none"; }, 4200);
   }
 
   function formatDate(ts) {
@@ -155,6 +169,8 @@
     messages: []
   };
   let expandedSessionId = null;
+  let libraryFilter = "threads"; // threads | summaries
+  let pendingSummaryCapture = false;
 
   // ── Suggested prompts ─────────────────────────────────────────────────────────
   const SUGGESTED_PROMPTS = [
@@ -344,6 +360,21 @@
         .v-history-count { font-size: 11px; color: #5050a0; }
         #v-clear-history { font-size: 11px; color: #5050a0; background: none; border: none; cursor: pointer; padding: 3px 8px; border-radius: 6px; transition: color 0.15s, background 0.15s; }
         #v-clear-history:hover { color: #f87171; background: rgba(248,113,113,0.1); }
+
+        .v-lib-filters { display:flex; gap:8px; padding:10px 16px 0; flex-shrink:0; }
+        .v-lib-filter { flex:1; font-size:11px; font-weight:600; letter-spacing:0.04em; text-transform:uppercase; padding:7px 0; border-radius:999px; border:1px solid #2a2a4a; background:#12122a; color:#7070a0; cursor:pointer; }
+        .v-lib-filter.active { border-color:#6d5ffa; color:#c4b5fd; background:rgba(109,95,250,0.12); }
+        .v-plan-bar { margin:10px 16px 0; padding:10px 12px; border-radius:12px; border:1px solid #2a2a4a; background:#12122a; font-size:11px; color:#9090b8; line-height:1.45; flex-shrink:0; }
+        .v-plan-bar strong { color:#e0e0f8; }
+        .v-plan-bar a, .v-plan-bar button.v-upgrade { color:#a78bfa; background:none; border:none; padding:0; cursor:pointer; font:inherit; text-decoration:underline; }
+        .v-session-actions { display:flex; gap:8px; padding:0 14px 12px; }
+        .v-session-actions button { flex:1; font-size:11px; font-weight:600; padding:7px 0; border-radius:8px; border:1px solid #2a2a4a; background:#1a1a38; color:#c0c0e8; cursor:pointer; }
+        .v-session-actions button:hover { border-color:#6d5ffa; color:#fff; }
+        .v-session-actions button.danger:hover { border-color:#f87171; color:#f87171; }
+        #v-chat-tools { display:flex; gap:8px; padding:0 16px 8px; flex-shrink:0; }
+        #v-chat-tools button { flex:1; font-size:11px; font-weight:600; padding:7px 0; border-radius:8px; border:1px solid #2a2a4a; background:#12122a; color:#a0a0c0; cursor:pointer; }
+        #v-chat-tools button:hover { border-color:#6d5ffa; color:#e0e0f8; }
+
         .v-history-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 32px 20px; gap: 12px; color: #5050a0; text-align: center; }
         .v-history-empty .v-empty-icon { font-size: 32px; opacity: 0.4; }
         .v-history-empty p { font-size: 13px; line-height: 1.5; }
@@ -397,7 +428,7 @@
           </div>
           <div class="v-tabs">
             <button class="v-tab active" data-tab="chat">Chat</button>
-            <button class="v-tab" data-tab="history">History</button>
+            <button class="v-tab" data-tab="history">Library</button>
           </div>
         </div>
 
@@ -407,6 +438,10 @@
           <div id="v-prompts">
             <div class="v-prompts-label">Try asking</div>
             <div class="v-prompts-grid" id="v-prompts-grid"></div>
+          </div>
+          <div id="v-chat-tools">
+            <button type="button" id="v-save-summary">Save page summary</button>
+            <button type="button" id="v-new-chat">New chat</button>
           </div>
           <div id="v-input-area">
             <textarea id="v-input" placeholder="Ask Reedr anything about this page…" rows="1" aria-label="Message Reedr"></textarea>
@@ -418,13 +453,18 @@
           </div>
         </div>
 
-        <!-- History view -->
+        <!-- Library view -->
         <div class="v-view hidden" id="v-view-history">
           <div id="v-history">
             <div class="v-history-toolbar">
               <span class="v-history-count" id="v-history-count">Loading…</span>
-              <button id="v-clear-history">Clear all</button>
+              <button id="v-clear-history">Clear</button>
             </div>
+            <div class="v-lib-filters" id="v-lib-filters">
+              <button class="v-lib-filter active" data-filter="threads">Chats</button>
+              <button class="v-lib-filter" data-filter="summaries">Summaries</button>
+            </div>
+            <div class="v-plan-bar" id="v-plan-bar"></div>
             <div id="v-history-list"></div>
           </div>
         </div>
@@ -535,67 +575,255 @@
     if (tab === "chat") shadow.getElementById("v-input")?.focus();
   }
 
-  // ── History rendering ─────────────────────────────────────────────────────────
+  // ── Library rendering ─────────────────────────────────────────────────────────
   function renderHistory() {
     const list  = shadow.getElementById("v-history-list");
     const count = shadow.getElementById("v-history-count");
+    const planBar = shadow.getElementById("v-plan-bar");
     if (!list) return;
 
-    loadHistory((sessions) => {
-      count.textContent = sessions.length === 0
-        ? "No conversations yet"
-        : sessions.length === 1 ? "1 conversation" : sessions.length + " conversations";
+    shadow.querySelectorAll(".v-lib-filter").forEach((btn) => {
+      btn.classList.toggle("active", btn.dataset.filter === libraryFilter);
+    });
 
-      if (sessions.length === 0) {
-        list.innerHTML = `<div class="v-history-empty"><div class="v-empty-icon">💬</div><p>Your conversation history will appear here.</p></div>`;
+    Promise.all([
+      Mem ? Mem.loadThreads() : Promise.resolve([]),
+      Mem ? Mem.loadSummaries() : Promise.resolve([]),
+      Mem ? Mem.getLibraryStats() : Promise.resolve(null),
+    ]).then(([threads, summaries, stats]) => {
+      if (planBar && stats) {
+        const limits = stats.limits;
+        planBar.innerHTML = `<strong>${stats.plan === "plus" ? "Plus" : "Free"}</strong> · `
+          + `${stats.threads}/${limits.maxThreads} chats · ${stats.summaries}/${limits.maxSummaries} summaries`
+          + (stats.plan === "plus"
+            ? ""
+            : ` · <button type="button" class="v-upgrade" id="v-upgrade-btn">Upgrade for more memory</button>`);
+        planBar.querySelector("#v-upgrade-btn")?.addEventListener("click", () => {
+          browserAPI.runtime.sendMessage({ type: "REEDR_OPEN_OPTIONS", section: "plan" });
+        });
+      }
+
+      const items = libraryFilter === "summaries" ? summaries : threads;
+      const label = libraryFilter === "summaries" ? "summaries" : "conversations";
+      count.textContent = items.length === 0
+        ? `No ${label} yet`
+        : items.length === 1 ? `1 ${label.slice(0, -1)}` : `${items.length} ${label}`;
+
+      if (items.length === 0) {
+        list.innerHTML = `<div class="v-history-empty"><div class="v-empty-icon">${libraryFilter === "summaries" ? "📝" : "💬"}</div><p>${
+          libraryFilter === "summaries"
+            ? "Page summaries you save will appear here, organized by site."
+            : "Your saved chat threads will appear here, organized by page."
+        }</p></div>`;
         return;
       }
 
-      list.innerHTML = "";
-      sessions.forEach((session) => {
-        const isExpanded  = expandedSessionId === session.id;
-        const userMsgs    = session.messages.filter((m) => m.role === "user");
-        const preview     = userMsgs.length > 0 ? userMsgs[0].content : null;
-
-        const el = document.createElement("div");
-        el.className = "v-session" + (isExpanded ? " expanded" : "");
-        el.dataset.id = session.id;
-
-        function truncate(str, n) { return str.length > n ? str.slice(0, n) + "…" : str; }
-
-        el.innerHTML = `
-          <div class="v-session-header">
-            <div class="v-session-icon">🌐</div>
-            <div class="v-session-info">
-              <div class="v-session-title">${escapeHtml(session.title || session.domain)}</div>
-              <div class="v-session-meta">
-                <span>${escapeHtml(session.domain)}</span>
-                <span class="v-session-dot"></span>
-                <span>${formatDate(session.timestamp)}</span>
-                <span class="v-session-dot"></span>
-                <span>${userMsgs.length} msg${userMsgs.length !== 1 ? "s" : ""}</span>
-              </div>
-              ${preview ? `<div class="v-session-preview">${escapeHtml(truncate(preview, 60))}</div>` : ""}
-            </div>
-            <span class="v-session-chevron">›</span>
-          </div>
-          <div class="v-session-messages">
-            ${session.messages.map((m) => `
-              <div class="v-mini-msg ${m.role}">
-                <span class="v-mini-msg-label">${m.role === "user" ? "You" : "Reedr"}</span>${escapeHtml(truncate(m.content, 200))}
-              </div>
-            `).join("")}
-          </div>
-        `;
-
-        el.querySelector(".v-session-header").addEventListener("click", () => {
-          expandedSessionId = isExpanded ? null : session.id;
-          renderHistory();
-        });
-
-        list.appendChild(el);
+      // Group by domain
+      const groups = {};
+      items.forEach((item) => {
+        const domain = item.domain || "other";
+        if (!groups[domain]) groups[domain] = [];
+        groups[domain].push(item);
       });
+
+      list.innerHTML = "";
+      Object.keys(groups).sort((a, b) => a.localeCompare(b)).forEach((domain) => {
+        const header = document.createElement("div");
+        header.style.cssText = "padding:12px 16px 4px;font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#5050a0;";
+        header.textContent = domain;
+        list.appendChild(header);
+
+        groups[domain].forEach((item) => {
+          if (libraryFilter === "summaries") {
+            list.appendChild(renderSummaryCard(item));
+          } else {
+            list.appendChild(renderThreadCard(item));
+          }
+        });
+      });
+    }).catch(() => {
+      list.innerHTML = `<div class="v-history-empty"><p>Could not load library.</p></div>`;
     });
+  }
+
+  function truncate(str, n) {
+    str = String(str || "");
+    return str.length > n ? str.slice(0, n) + "…" : str;
+  }
+
+  function renderThreadCard(session) {
+    const isExpanded = expandedSessionId === session.id;
+    const userMsgs = (session.messages || []).filter((m) => m.role === "user");
+    const preview = userMsgs.length > 0 ? userMsgs[0].content : null;
+    const el = document.createElement("div");
+    el.className = "v-session" + (isExpanded ? " expanded" : "");
+    el.dataset.id = session.id;
+    el.innerHTML = `
+      <div class="v-session-header">
+        <div class="v-session-icon">💬</div>
+        <div class="v-session-info">
+          <div class="v-session-title">${escapeHtml(session.title || session.domain)}</div>
+          <div class="v-session-meta">
+            <span>${formatDate(session.updatedAt || session.timestamp)}</span>
+            <span class="v-session-dot"></span>
+            <span>${userMsgs.length} msg${userMsgs.length !== 1 ? "s" : ""}</span>
+          </div>
+          ${preview ? `<div class="v-session-preview">${escapeHtml(truncate(preview, 60))}</div>` : ""}
+        </div>
+        <span class="v-session-chevron">›</span>
+      </div>
+      <div class="v-session-messages">
+        ${(session.messages || []).map((m) => `
+          <div class="v-mini-msg ${m.role}">
+            <span class="v-mini-msg-label">${m.role === "user" ? "You" : "Reedr"}</span>${escapeHtml(truncate(m.content, 200))}
+          </div>
+        `).join("")}
+        <div class="v-session-actions">
+          <button type="button" data-act="open">Open chat</button>
+          <button type="button" class="danger" data-act="delete">Delete</button>
+        </div>
+      </div>
+    `;
+    el.querySelector(".v-session-header").addEventListener("click", () => {
+      expandedSessionId = isExpanded ? null : session.id;
+      renderHistory();
+    });
+    el.querySelector('[data-act="open"]')?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      restoreThread(session);
+    });
+    el.querySelector('[data-act="delete"]')?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      Mem.deleteThread(session.id).then(() => renderHistory());
+    });
+    return el;
+  }
+
+  function renderSummaryCard(summary) {
+    const isExpanded = expandedSessionId === summary.id;
+    const el = document.createElement("div");
+    el.className = "v-session" + (isExpanded ? " expanded" : "");
+    el.dataset.id = summary.id;
+    el.innerHTML = `
+      <div class="v-session-header">
+        <div class="v-session-icon">📝</div>
+        <div class="v-session-info">
+          <div class="v-session-title">${escapeHtml(summary.title || summary.domain)}</div>
+          <div class="v-session-meta">
+            <span>${escapeHtml(summary.kind || "page")}</span>
+            <span class="v-session-dot"></span>
+            <span>${formatDate(summary.timestamp)}</span>
+          </div>
+          <div class="v-session-preview">${escapeHtml(truncate(summary.text, 80))}</div>
+        </div>
+        <span class="v-session-chevron">›</span>
+      </div>
+      <div class="v-session-messages">
+        <div class="v-mini-msg assistant">
+          <span class="v-mini-msg-label">Summary</span>${escapeHtml(truncate(summary.text, 800))}
+        </div>
+        <div class="v-session-actions">
+          <button type="button" data-act="open">Discuss</button>
+          <button type="button" class="danger" data-act="delete">Delete</button>
+        </div>
+      </div>
+    `;
+    el.querySelector(".v-session-header").addEventListener("click", () => {
+      expandedSessionId = isExpanded ? null : summary.id;
+      renderHistory();
+    });
+    el.querySelector('[data-act="open"]')?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      startChatFromSummary(summary);
+    });
+    el.querySelector('[data-act="delete"]')?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      Mem.deleteSummary(summary.id).then(() => renderHistory());
+    });
+    return el;
+  }
+
+  function restoreThread(session) {
+    messages = [...(session.messages || [])];
+    currentSession = {
+      id: session.id,
+      url: session.url || pageContext.url,
+      title: session.title || pageContext.title,
+      domain: session.domain || getDomain(pageContext.url),
+      timestamp: session.timestamp || Date.now(),
+      messages: [...messages],
+    };
+    const box = shadow.getElementById("v-messages");
+    if (box) {
+      box.innerHTML = "";
+      messages.forEach((m) => appendMessageEl(m.role, m.content));
+    }
+    hidePrompts();
+    switchTab("chat");
+    showMemoryToast("Opened saved chat thread.");
+  }
+
+  function startChatFromSummary(summary) {
+    messages = [];
+    currentSession = {
+      id: generateId(),
+      url: summary.url || pageContext.url,
+      title: summary.title || pageContext.title,
+      domain: summary.domain || getDomain(pageContext.url),
+      timestamp: Date.now(),
+      messages: [],
+    };
+    const box = shadow.getElementById("v-messages");
+    if (box) box.innerHTML = "";
+    appendMessageEl("assistant", "Here's the saved summary for this page:\n\n" + summary.text, false);
+    messages = [{ role: "assistant", content: "Here's the saved summary for this page:\n\n" + summary.text }];
+    hidePrompts();
+    switchTab("chat");
+    const input = shadow.getElementById("v-input");
+    if (input) {
+      input.value = "Let's dig into this summary — ";
+      input.focus();
+      shadow.getElementById("v-send").disabled = false;
+    }
+  }
+
+  async function savePageSummaryFromChat(explicitText) {
+    const assistantMsgs = messages.filter((m) => m.role === "assistant");
+    const text = explicitText || (assistantMsgs.length ? assistantMsgs[assistantMsgs.length - 1].content : "");
+    if (!text) {
+      showMemoryToast("Chat with Reedr first, then save a summary.");
+      return;
+    }
+    const result = await Mem.saveSummary({
+      url: pageContext.url,
+      domain: getDomain(pageContext.url),
+      title: pageContext.title || getDomain(pageContext.url),
+      text,
+      kind: isPdfPage ? "pdf" : "page",
+      threadId: currentSession.id,
+    });
+    if (result?.ok) {
+      showMemoryToast(result.atCap
+        ? "Summary saved — Free summary slots are full. Upgrade to Plus for more."
+        : "Page summary saved to your Library.");
+    }
+  }
+
+  function startNewChat() {
+    persistCurrentSession();
+    messages = [];
+    currentSession = {
+      id: generateId(),
+      url: pageContext.url,
+      title: pageContext.title,
+      domain: getDomain(pageContext.url),
+      timestamp: Date.now(),
+      messages: [],
+    };
+    const box = shadow.getElementById("v-messages");
+    if (box) box.innerHTML = "";
+    showPrompts();
+    showMemoryToast("Started a new chat on this page.");
   }
 
   function escapeHtml(str) {
@@ -677,7 +905,25 @@
     });
 
     shadow.getElementById("v-clear-history").addEventListener("click", () => {
-      clearHistory(() => renderHistory());
+      const clearFn = libraryFilter === "summaries"
+        ? (Mem ? Mem.clearSummaries() : Promise.resolve())
+        : (Mem ? Mem.clearThreads() : Promise.resolve());
+      clearFn.then(() => renderHistory());
+    });
+
+    shadow.getElementById("v-lib-filters")?.addEventListener("click", (e) => {
+      const btn = e.target.closest(".v-lib-filter");
+      if (!btn) return;
+      libraryFilter = btn.dataset.filter || "threads";
+      expandedSessionId = null;
+      renderHistory();
+    });
+
+    shadow.getElementById("v-save-summary")?.addEventListener("click", () => {
+      savePageSummaryFromChat();
+    });
+    shadow.getElementById("v-new-chat")?.addEventListener("click", () => {
+      startNewChat();
     });
 
     const input   = shadow.getElementById("v-input");
@@ -825,6 +1071,10 @@
       copyBtn.addEventListener("click", () => copyText(finalContent, copyBtn));
       messages.push({ role: "assistant", content: finalContent });
       persistCurrentSession();
+      if (pendingSummaryCapture) {
+        pendingSummaryCapture = false;
+        savePageSummaryFromChat(finalContent);
+      }
       isLoading = false;
       shadow.getElementById("v-send").disabled =
         shadow.getElementById("v-input").value.trim() === "";
@@ -875,6 +1125,7 @@
   async function sendMessageText(text) {
     if (!text || isLoading) return;
     hidePrompts();
+    pendingSummaryCapture = !!(Mem && Mem.looksLikeSummaryRequest(text));
     messages.push({ role: "user", content: text });
     appendMessageEl("user", text);
     await doApiCall([...messages]);
@@ -968,12 +1219,44 @@
 
   window.addEventListener("beforeunload", () => persistCurrentSession());
 
+  // Refresh plan limits from API when configured (non-blocking)
+  async function syncPlanFromApi() {
+    try {
+      if (!apiUrl || !Mem) return;
+      const stored = await browserAPI.storage.sync.get(["reedrAuthToken"]);
+      const headers = { "Accept": "application/json" };
+      if (stored.reedrAuthToken) headers["Authorization"] = "Bearer " + stored.reedrAuthToken;
+      const endpoint = stored.reedrAuthToken
+        ? (apiUrl + "/reedr/subscription")
+        : (apiUrl + "/reedr/plans");
+      const res = await fetch(endpoint, { headers, signal: AbortSignal.timeout(8000) });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (stored.reedrAuthToken && data.plan) {
+        await Mem.setPlanCache({
+          plan: data.plan,
+          limits: data.limits,
+          status: data.status,
+          renewsAt: data.renewsAt,
+          email: data.user?.email || null,
+        });
+      } else if (data.plans?.free) {
+        const cache = await Mem.getPlanCache();
+        if (cache.plan !== "plus") {
+          await Mem.setPlanCache({ plan: "free", limits: data.plans.free, status: "active" });
+        }
+      }
+    } catch (_) {}
+  }
+
+
   // ── Init ─────────────────────────────────────────────────────────────────────
   function start() {
     const boot = (url) => {
       apiUrl = url || "";
       createUI();
       if (isPdfPage) extractPdfText();
+      syncPlanFromApi();
     };
 
     try {
