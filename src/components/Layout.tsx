@@ -1,6 +1,6 @@
 import { FC, ReactNode } from 'react';
 import { Link } from 'wouter';
-import logoSrc from '@/assets/victor-logo_2.png';
+import logoSrc from '@/assets/reedr-logo.png';
 
 interface LayoutProps {
   children: ReactNode;
