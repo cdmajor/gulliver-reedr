@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=1280"/>
+<title>Reedr Demo</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    background: #f5f5f0;
+    min-height: 100vh;
+  }
+
+  /* Fake browser chrome */
+  .browser-chrome {
+    background: #e8e8e8;
+    border-bottom: 1px solid #ccc;
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .browser-dots { display: flex; gap: 6px; }
+  .browser-dots span { width: 12px; height: 12px; border-radius: 50%; }
+  .browser-dots .red { background: #ff5f57; }
+  .browser-dots .yellow { background: #ffbd2e; }
+  .browser-dots .green { background: #28c840; }
+  .browser-address {
+    flex: 1;
+    background: #fff;
+    border: 1px solid #ccc;
+    border-radius: 20px;
+    padding: 5px 14px;
+    font-size: 13px;
+    color: #555;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  /* Fake article page */
+  .page-content {
+    max-width: 740px;
+    margin: 48px auto;
+    padding: 0 32px;
+    position: relative;
+  }
+  .article-tag { font-size: 12px; font-weight: 600; color: #6d5ffa; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 12px; }
+  .article-title { font-size: 32px; font-weight: 800; color: #111; line-height: 1.25; margin-bottom: 14px; }
+  .article-meta { font-size: 13px; color: #888; margin-bottom: 24px; }
+  .article-body { font-size: 16px; line-height: 1.75; color: #333; }
+  .article-body p { margin-bottom: 18px; }
+
+  /* Reedr floating button */
+  #reedr-btn {
+    position: fixed;
+    bottom: 28px;
+    right: 28px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #6d5ffa, #a78bfa);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 20px rgba(109,95,250,0.45);
+    cursor: pointer;
+    z-index: 100;
+  }
+  #reedr-btn .label { color: #fff; font-size: 22px; font-weight: 800; letter-spacing: -0.5px; user-select: none; }
+  .v-dot {
+    position: absolute;
+    top: 0; right: 0;
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: #22c55e;
+    border: 2px solid #09091a;
+  }
+
+  /* Reedr panel */
+  #reedr-panel {
+    position: fixed;
+    bottom: 96px;
+    right: 28px;
+    width: 380px;
+    max-height: 560px;
+    background: #0d0d22;
+    border: 1px solid #2a2a4a;
+    border-radius: 20px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.7);
+    z-index: 99;
+  }
+
+  /* Header */
+  #v-header {
+    padding: 14px 18px 0;
+    background: #13132b;
+    border-bottom: 1px solid #2a2a4a;
+    flex-shrink: 0;
+  }
+  .v-header-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .v-avatar {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: linear-gradient(135deg, #6d5ffa, #a78bfa);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 800; color: #fff;
+    flex-shrink: 0;
+  }
+  .v-header-text { flex: 1; }
+  .v-header-name { font-size: 14px; font-weight: 700; color: #f0f0f8; }
+  .v-header-sub { font-size: 11px; color: #7070b0; }
+  .v-close-btn {
+    background: none; border: none; cursor: pointer;
+    color: #5050a0; font-size: 20px; padding: 4px;
+    border-radius: 6px; line-height: 1;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .v-tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid #2a2a4a;
+    margin-top: 4px;
+  }
+  .v-tab {
+    flex: 1; padding: 8px 0;
+    font-size: 12px; font-weight: 600;
+    letter-spacing: 0.04em; text-transform: uppercase;
+    background: none; border: none; cursor: pointer;
+    color: #5050a0;
+    border-bottom: 2px solid transparent;
+  }
+  .v-tab.active { color: #a78bfa; border-bottom-color: #6d5ffa; }
+
+  /* Messages */
+  #v-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    scrollbar-width: thin;
+    scrollbar-color: #2a2a4a transparent;
+  }
+  .v-msg { display: flex; gap: 8px; align-items: flex-start; }
+  .v-msg.user { flex-direction: row-reverse; }
+  .v-msg-avatar {
+    width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+    background: linear-gradient(135deg, #6d5ffa, #a78bfa);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 800; color: #fff; margin-top: 2px;
+  }
+  .v-msg.user .v-msg-avatar { background: #2a2a4a; color: #a0a0c0; font-size: 13px; }
+  .v-msg-body { display: flex; flex-direction: column; gap: 4px; max-width: 78%; }
+  .v-msg-name { font-size: 11px; color: #7070b0; font-weight: 600; }
+  .v-msg.user .v-msg-name { text-align: right; }
+  .v-msg-bubble {
+    padding: 10px 14px;
+    border-radius: 16px;
+    font-size: 13.5px;
+    line-height: 1.6;
+    word-wrap: break-word;
+  }
+  .v-msg.assistant .v-msg-bubble {
+    background: #1a1a38; color: #e0e0f8;
+    border-bottom-left-radius: 4px;
+  }
+  .v-msg.user .v-msg-bubble {
+    background: #6d5ffa; color: #fff;
+    border-bottom-right-radius: 4px;
+  }
+  .v-msg-bubble p { margin-bottom: 6px; }
+  .v-msg-bubble p:last-child { margin-bottom: 0; }
+  .v-msg-bubble strong { font-weight: 700; }
+
+  /* Page context pill */
+  .v-context-pill {
+    margin: 0 16px 4px;
+    padding: 6px 12px;
+    background: rgba(109,95,250,0.08);
+    border: 1px solid rgba(109,95,250,0.2);
+    border-radius: 10px;
+    font-size: 11.5px; color: #7070b0;
+    display: flex; align-items: center; gap: 7px;
+    flex-shrink: 0;
+  }
+  .v-context-dot { width: 6px; height: 6px; border-radius: 50%; background: #6d5ffa; flex-shrink: 0; }
+
+  /* Input */
+  #v-input-area {
+    padding: 12px 16px;
+    background: #13132b;
+    border-top: 1px solid #2a2a4a;
+    display: flex; gap: 10px; align-items: flex-end;
+    flex-shrink: 0;
+  }
+  #v-input {
+    flex: 1;
+    background: #09091a;
+    border: 1px solid #3a3a6a;
+    border-radius: 12px;
+    color: #f0f0f8;
+    font-size: 13.5px;
+    font-family: inherit;
+    padding: 10px 14px;
+    resize: none;
+    outline: none;
+    min-height: 40px;
+    line-height: 1.45;
+  }
+  #v-send {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: linear-gradient(135deg, #6d5ffa, #a78bfa);
+    border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 2px; flex-shrink: 0;
+  }
+  #v-send svg { width: 16px; height: 16px; fill: #fff; }
+</style>
+</head>
+<body>
+
+<!-- Browser chrome -->
+<div class="browser-chrome">
+  <div class="browser-dots">
+    <span class="red"></span>
+    <span class="yellow"></span>
+    <span class="green"></span>
+  </div>
+  <div class="browser-address">
+    🔒 &nbsp;techcrunch.com/2025/07/25/openai-releases-gpt-5-reasoning-model
+  </div>
+</div>
+
+<!-- Fake article -->
+<div class="page-content">
+  <div class="article-tag">Artificial Intelligence</div>
+  <h1 class="article-title">OpenAI Releases GPT-5, Its Most Capable Reasoning Model Yet</h1>
+  <div class="article-meta">By Kyle Wiggers &nbsp;·&nbsp; July 25, 2025 &nbsp;·&nbsp; 4 min read</div>
+  <div class="article-body">
+    <p>OpenAI on Friday released GPT-5, a new flagship model the company claims represents a significant leap in reasoning ability over its predecessors. The model, available via the API and ChatGPT, can solve complex math, science, and coding problems with a degree of accuracy that OpenAI says approaches expert-level performance.</p>
+    <p>GPT-5 introduces a new "deep thinking" mode that allocates additional compute at inference time, allowing it to deliberate before responding. In internal benchmarks, GPT-5 scored 87% on the AIME 2025 math competition and surpassed PhD-level accuracy on GPQA Diamond, a difficult graduate-level science test.</p>
+    <p>"We believe GPT-5 is the most capable model we have ever released," Sam Altman, OpenAI's CEO, wrote in a blog post Friday. "It represents a new class of intelligence that can reason through hard problems the way a domain expert would."</p>
+  </div>
+</div>
+
+<!-- Reedr floating button -->
+<div id="reedr-btn">
+  <span class="label">R</span>
+  <div class="v-dot"></div>
+</div>
+
+<!-- Reedr panel (open) -->
+<div id="reedr-panel">
+  <div id="v-header">
+    <div class="v-header-row">
+      <div class="v-avatar">R</div>
+      <div class="v-header-text">
+        <div class="v-header-name">Reedr</div>
+        <div class="v-header-sub">techcrunch.com · ready</div>
+      </div>
+      <button class="v-close-btn">✕</button>
+    </div>
+    <div class="v-tabs">
+      <button class="v-tab active">Chat</button>
+      <button class="v-tab">History</button>
+      <button class="v-tab">Library</button>
+    </div>
+  </div>
+
+  <div class="v-context-pill">
+    <span class="v-context-dot"></span>
+    Read this page — OpenAI Releases GPT-5, Its Most Capable Reas…
+  </div>
+
+  <div id="v-messages">
+    <div class="v-msg assistant">
+      <div class="v-msg-avatar">R</div>
+      <div class="v-msg-body">
+        <div class="v-msg-name">Reedr</div>
+        <div class="v-msg-bubble">
+          <p>Hey! I've read the article. OpenAI just dropped <strong>GPT-5</strong> — their most powerful model yet. Want me to break down the key claims, or is there something specific you want to dig into?</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="v-msg user">
+      <div class="v-msg-avatar">U</div>
+      <div class="v-msg-body">
+        <div class="v-msg-name">You</div>
+        <div class="v-msg-bubble">
+          What's "deep thinking" mode and does it cost extra?
+        </div>
+      </div>
+    </div>
+
+    <div class="v-msg assistant">
+      <div class="v-msg-avatar">R</div>
+      <div class="v-msg-body">
+        <div class="v-msg-name">Reedr</div>
+        <div class="v-msg-bubble">
+          <p><strong>Deep thinking mode</strong> gives GPT-5 extra compute at inference time — it essentially "pauses to deliberate" before answering, similar to how o1/o3 work.</p>
+          <p>The article doesn't mention pricing specifics, but historically OpenAI charges more for reasoning-heavy compute. Worth checking their API pricing page for the latest.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="v-input-area">
+    <textarea id="v-input" rows="1" placeholder="Ask anything about this page…"></textarea>
+    <button id="v-send">
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/></svg>
+    </button>
+  </div>
+</div>
+
+</body>
+</html>
