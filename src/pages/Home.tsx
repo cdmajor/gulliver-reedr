@@ -16,13 +16,21 @@ const BROWSER_LABELS: Record<Browser, { icon: string; name: string; cta: string 
 };
 
 function extensionDownloadUrl(browser: Browser) {
+  const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+  // Prefer the API packer (bakes API URL). Fall back to the static zip for local/dev.
   return (
     window.location.origin +
+    base +
     '/api/reedr/extension-download?origin=' +
-    encodeURIComponent(window.location.origin) +
+    encodeURIComponent(window.location.origin + base) +
     '&browser=' +
     browser
   );
+}
+
+function staticExtensionZipUrl() {
+  const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+  return window.location.origin + base + '/reedr-extension.zip';
 }
 
 const fadeUp = {
@@ -79,13 +87,30 @@ export default function Home() {
     setBrowser(detectBrowser());
   }, []);
 
-  function handleDownload(b: Browser = browser) {
-    const a = document.createElement('a');
-    a.href = extensionDownloadUrl(b);
-    a.download = 'reedr-extension.zip';
-    a.click();
+  async function handleDownload(b: Browser = browser) {
     setBrowser(b);
     setInstallOpen(true);
+
+    const apiUrl = extensionDownloadUrl(b);
+    const fallbackUrl = staticExtensionZipUrl();
+
+    try {
+      const res = await fetch(apiUrl, { method: 'GET' });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const blob = await res.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = objectUrl;
+      a.download = 'reedr-extension.zip';
+      a.click();
+      URL.revokeObjectURL(objectUrl);
+    } catch {
+      // Local vite / missing API: serve the prebuilt zip from /public
+      const a = document.createElement('a');
+      a.href = fallbackUrl;
+      a.download = 'reedr-extension.zip';
+      a.click();
+    }
   }
 
   return (
@@ -226,8 +251,8 @@ export default function Home() {
               },
               {
                 num: "Step three",
-                title: "Click V and ask.",
-                desc: "The floating V button opens a chat. Ask him to summarize, explain, push back, find the key point, or compare it to something else. He already knows the content."
+                title: "Click R and ask.",
+                desc: "The floating R button opens a chat. Ask him to summarize, explain, push back, find the key point, or compare it to something else. He already knows the content."
               }
             ].map((item, i) => (
               <motion.div

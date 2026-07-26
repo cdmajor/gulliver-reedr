@@ -221,12 +221,33 @@ export function InstallModal({ onClose, initialBrowser }: InstallModalProps) {
                 </>
               )}
 
+              <Step n={4} title="Check that it works">
+                <ol className="list-decimal pl-4 space-y-1.5">
+                  <li>Open any article (news, docs, blog).</li>
+                  <li>Look for the purple <strong className="text-white">R</strong> button bottom-right.</li>
+                  <li>Click it and ask something like <em className="text-[#c0c0e8]">“Summarize this in 3 bullets.”</em></li>
+                  <li>
+                    If chat says it isn’t configured: open Reedr Settings, paste your API URL ending in{' '}
+                    <code className="text-[#a78bfa] font-mono text-[12px]">/api</code>, tap <strong className="text-white">Test</strong>, then <strong className="text-white">Save</strong>.
+                  </li>
+                </ol>
+              </Step>
+
               <div className="bg-[#0d2218] border border-[#28c840]/30 rounded-xl p-4 flex items-start gap-3">
                 <span className="text-xl leading-none mt-0.5">✓</span>
                 <div>
-                  <p className="text-[#28c840] font-semibold text-sm">You’re done</p>
+                  <p className="text-[#28c840] font-semibold text-sm">You’re done when Reedr answers</p>
                   <p className="text-[#8080a0] text-xs leading-relaxed mt-1">
-                    Look for the purple <strong className="text-white">R</strong> button in the bottom-right of any page. Click it to chat — Reedr already read the page.
+                    A real reply about the page means install + API are working. Want a no-install preview first? Open{' '}
+                    <a
+                      href={`${import.meta.env.BASE_URL.replace(/\/$/, '')}/reedr-demo.html`}
+                      className="text-[#a78bfa] underline underline-offset-2"
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      reedr-demo.html
+                    </a>
+                    .
                   </p>
                 </div>
               </div>
