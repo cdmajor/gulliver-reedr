@@ -322,24 +322,22 @@ testBtn.addEventListener("click", async () => {
   testBtn.disabled = true;
   testBtn.textContent = "…";
   try {
-    const candidates = [url + "/reedr/plans", url + "/health", url];
-    let ok = false;
-    let lastStatus = 0;
-    for (const candidate of candidates) {
-      try {
-        const res = await fetch(candidate, {
-          method: "GET",
-          signal: AbortSignal.timeout(6000),
-        });
-        lastStatus = res.status;
-        if (res.status < 500) { ok = true; break; }
-      } catch (_) {}
+    // Only /reedr/plans proves this is a Reedr API. /health and / often 404 on valid hosts.
+    const res = await fetch(url + "/reedr/plans", {
+      method: "GET",
+      headers: { Accept: "application/json" },
+      signal: AbortSignal.timeout(6000),
+    });
+    if (!res.ok) {
+      showStatus(statusEl, "Server responded with " + res.status + ". Check the URL ends with /api.", "error");
+    } else {
+      const data = await res.json().catch(() => ({}));
+      if (data.plans?.free || data.plans?.plus) {
+        showStatus(statusEl, "Connected successfully!", "success");
+      } else {
+        showStatus(statusEl, "Reached the server, but it didn’t look like a Reedr API.", "error");
+      }
     }
-    showStatus(
-      statusEl,
-      ok ? "Connected successfully!" : ("Server responded with " + (lastStatus || "no response") + ". Check the URL."),
-      ok ? "success" : "error",
-    );
   } catch {
     showStatus(statusEl, "Could not reach the server. Check the URL.", "error");
   }
@@ -347,7 +345,20 @@ testBtn.addEventListener("click", async () => {
   testBtn.textContent = "Test";
 });
 
-// Deep-link from Library upgrade CTA
-if (location.hash.includes("plan") || new URLSearchParams(location.search).get("section") === "plan") {
-  document.getElementById("plan")?.scrollIntoView();
+// Deep-link from Library upgrade CTA (hash, query, or storage flag from background)
+async function applyOptionsDeepLink() {
+  let section = "";
+  if (location.hash.includes("plan") || new URLSearchParams(location.search).get("section") === "plan") {
+    section = "plan";
+  } else {
+    try {
+      const local = await browserAPI.storage.local.get(["reedr_open_section"]);
+      section = local.reedr_open_section || "";
+      if (section) await browserAPI.storage.local.remove(["reedr_open_section"]);
+    } catch (_) {}
+  }
+  if (section === "plan") {
+    document.getElementById("plan")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
 }
+applyOptionsDeepLink();

@@ -11,8 +11,9 @@
     "pack:extension": "node scripts/pack-extension.mjs",
     "pack:cws": "node scripts/pack-extension.mjs --cws",
     "prepare:unpacked": "node scripts/prepare-unpacked.mjs",
+    "smoke": "node scripts/smoke-extension.mjs",
     "verify": "node scripts/verify.mjs",
-    "test": "npm run verify && npm run typecheck && npm run build"
+    "test": "npm run verify && npm run smoke && npm run typecheck && npm run build"
   },
   "devDependencies": {
     "@hookform/resolvers": "^3.10.0",

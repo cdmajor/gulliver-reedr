@@ -507,7 +507,13 @@
 
   // ── PDF extraction ────────────────────────────────────────────────────────────
   async function extractPdfText() {
-    if (!isPdfPage || !apiUrl) return;
+    if (!isPdfPage) return;
+    if (!apiUrl) {
+      removePdfStatus();
+      isPdfReady = false;
+      updatePageTitle();
+      return;
+    }
     try {
       const result = await new Promise((resolve) => {
         browserAPI.runtime.sendMessage(
@@ -1081,14 +1087,14 @@
       container.scrollTop = container.scrollHeight;
     }
 
-    function finishErr() {
+    function finishErr(detail) {
       if (settled) return;
       settled = true;
       row.remove();
       isLoading = false;
       shadow.getElementById("v-send").disabled =
         shadow.getElementById("v-input").value.trim() === "";
-      showErrorWithRetry(msgs);
+      showErrorWithRetry(msgs, detail);
     }
 
     try {
@@ -1104,21 +1110,21 @@
           finishOk();
         } else if (msg.type === "ERROR") {
           try { port.disconnect(); } catch (_) {}
-          finishErr();
+          finishErr(msg.error || "");
         }
       });
       port.onDisconnect.addListener(() => {
         if (settled) return;
         // If the worker died mid-stream but we already got text, keep it
         if (accumulated) finishOk();
-        else finishErr();
+        else finishErr(browserAPI.runtime.lastError?.message || "");
       });
       port.postMessage({
         type: "START",
         payload: { messages: msgs, pageContext },
       });
-    } catch {
-      finishErr();
+    } catch (err) {
+      finishErr(err?.message || String(err || ""));
     }
   }
 
@@ -1155,7 +1161,7 @@
     });
   }
 
-  function showErrorWithRetry(retryMessages) {
+  function showErrorWithRetry(retryMessages, detail) {
     const container = shadow.getElementById("v-messages");
     if (!container) return;
 
@@ -1164,7 +1170,10 @@
 
     const errMsg = document.createElement("div");
     errMsg.className = "v-error-msg";
-    errMsg.textContent = "Couldn't reach Reedr right now. Check your connection and try again.";
+    const detailText = (detail && String(detail).trim()) || "";
+    errMsg.textContent = detailText
+      ? detailText
+      : "Couldn't reach Reedr right now. Check your connection and try again.";
 
     const retryBtn = document.createElement("button");
     retryBtn.className = "v-retry-btn";
@@ -1270,6 +1279,32 @@
     } catch (_) {
       boot("");
     }
+
+    // Settings saves into storage.sync — pick up API URL without requiring a tab reload.
+    try {
+      browserAPI.storage.onChanged.addListener((changes, area) => {
+        if (area !== "sync" || !changes.reedrApiUrl) return;
+        const next = (changes.reedrApiUrl.newValue || "").trim().replace(/\/$/, "");
+        const prev = apiUrl || "";
+        apiUrl = next;
+        if (!prev && next) {
+          // Was unconfigured: rebuild notice → real chat UI state
+          const container = shadow?.getElementById("v-messages");
+          if (container) {
+            container.innerHTML = "";
+            messages = [];
+            appendMessageEl(
+              "assistant",
+              "Reedr is ready. Ask me anything about this page.",
+            );
+          }
+          if (isPdfPage) extractPdfText();
+          syncPlanFromApi();
+        } else if (prev && !next) {
+          showNoApiNotice();
+        }
+      });
+    } catch (_) {}
   }
 
   if (document.readyState === "loading") {

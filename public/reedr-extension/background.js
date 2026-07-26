@@ -47,8 +47,17 @@ browserAPI.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   }
 
   if (message.type === "REEDR_OPEN_OPTIONS") {
-    if (browserAPI.runtime.openOptionsPage) {
-      browserAPI.runtime.openOptionsPage();
+    const section = message.section || "";
+    const open = () => {
+      if (browserAPI.runtime.openOptionsPage) {
+        browserAPI.runtime.openOptionsPage();
+      }
+    };
+    if (section) {
+      // options.html reads this on load for deep-links (e.g. Library → Upgrade)
+      browserAPI.storage.local.set({ reedr_open_section: section }).then(open).catch(open);
+    } else {
+      open();
     }
     return false;
   }
