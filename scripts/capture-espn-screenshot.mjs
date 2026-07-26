@@ -12,15 +12,21 @@ import puppeteer from 'puppeteer-core';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, '..');
 const extDir = path.join(root, 'reedr-unpacked');
-const profileDir = '/tmp/reedr-espn-profile';
-const outPath = '/opt/cursor/artifacts/screenshots/reedr-espn-in-use.png';
-const debugPort = 9333;
+const outPath =
+  process.env.OUT_PATH ||
+  '/opt/cursor/artifacts/screenshots/reedr-espn-in-use.png';
+const debugPort = Number(process.env.DEBUG_PORT || 9333);
 const chromeBinary =
   process.env.CHROME_BIN ||
   '/tmp/chrome-for-testing/chrome/linux-136.0.7103.113/chrome-linux64/chrome';
-const espnUrl =
+const pageUrl =
+  process.env.PAGE_URL ||
   process.env.ESPN_URL ||
   'https://www.espn.com/nba/story/_/id/49227450/lebron-james-signs-philadelphia-76ers-grades-reaction-lakers-contract';
+const prompt =
+  process.env.REEDR_PROMPT ||
+  'Summarize this page in 3 short bullets.';
+const profileDir = process.env.PROFILE_DIR || '/tmp/reedr-capture-profile';
 
 if (!existsSync(path.join(extDir, 'manifest.json'))) {
   console.error('Missing reedr-unpacked/. Run: npm run prepare:unpacked');
@@ -107,8 +113,8 @@ try {
   if (!loaded.count) throw new Error('Reedr extension did not load into the browser');
   await extCheck.close();
 
-  console.log('Opening ESPN…', espnUrl);
-  await page.goto(espnUrl, { waitUntil: 'domcontentloaded', timeout: 90000 });
+  console.log('Opening page…', pageUrl);
+  await page.goto(pageUrl, { waitUntil: 'domcontentloaded', timeout: 90000 });
   await sleep(5000);
 
   // Dismiss common consent / overlays if present
@@ -147,15 +153,15 @@ try {
   if (!panelOpen) throw new Error('Reedr panel did not open');
   console.log('Panel open — sending question');
 
-  await page.evaluate(() => {
+  await page.evaluate((text) => {
     const shadow = document.getElementById('reedr-companion-root').shadowRoot;
     const input = shadow.getElementById('v-input');
     const send = shadow.getElementById('v-send');
-    input.value = 'Summarize this ESPN story in 3 short bullets.';
+    input.value = text;
     input.dispatchEvent(new Event('input', { bubbles: true }));
     send.disabled = false;
     send.click();
-  });
+  }, prompt);
 
   // Wait for an assistant reply bubble with real text (not just cursor)
   await page.waitForFunction(() => {
@@ -178,7 +184,7 @@ try {
   });
 
   // Also save a page-marked copy for the walkthrough
-  const workspaceCopy = path.join(root, 'tmp', 'reedr-espn-in-use.png');
+  const workspaceCopy = path.join(root, 'tmp', path.basename(outPath));
   mkdirSync(path.dirname(workspaceCopy), { recursive: true });
   await page.screenshot({ path: workspaceCopy, type: 'png', fullPage: false });
 
@@ -187,9 +193,14 @@ try {
     const bubbles = [...shadow.querySelectorAll('.v-msg.assistant .v-msg-bubble')];
     return bubbles.map((b) => b.innerText.trim()).filter(Boolean).slice(-1)[0]?.slice(0, 240);
   });
+  const metaPath = outPath.replace(/\.png$/i, '.json');
   writeFileSync(
-    path.join(root, 'tmp', 'reedr-espn-capture.json'),
-    JSON.stringify({ espnUrl, outPath, snippet, at: new Date().toISOString() }, null, 2),
+    metaPath,
+    JSON.stringify({ pageUrl, outPath, prompt, snippet, at: new Date().toISOString() }, null, 2),
+  );
+  writeFileSync(
+    path.join(root, 'tmp', path.basename(metaPath)),
+    JSON.stringify({ pageUrl, outPath, prompt, snippet, at: new Date().toISOString() }, null, 2),
   );
 
   console.log('Wrote', outPath);
