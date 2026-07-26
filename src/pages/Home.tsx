@@ -2,18 +2,27 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Layout } from '@/components/Layout';
 import { InstallModal, detectBrowser } from '@/components/InstallGuide';
+import {
+  type Browser,
+  hasOneClickInstall,
+  oneClickCta,
+  storeUrlFor,
+} from '@/lib/extensionStores';
 import heroImage from '@/assets/hero-browser.jpg';
 
-type Browser = 'chrome' | 'edge' | 'firefox' | 'safari' | 'brave' | 'opera';
-
-const BROWSER_LABELS: Record<Browser, { icon: string; name: string; cta: string }> = {
-  chrome:  { icon: '🟡', name: 'Chrome',  cta: 'Download for Chrome' },
-  edge:    { icon: '🔵', name: 'Edge',    cta: 'Download for Edge' },
-  firefox: { icon: '🦊', name: 'Firefox', cta: 'Download for Firefox' },
-  safari:  { icon: '🧭', name: 'Safari',  cta: 'Download for Safari' },
-  brave:   { icon: '🦁', name: 'Brave',   cta: 'Download for Brave' },
-  opera:   { icon: '🔴', name: 'Opera',   cta: 'Download for Opera' },
+const BROWSER_LABELS: Record<Browser, { icon: string; name: string }> = {
+  chrome:  { icon: '🟡', name: 'Chrome' },
+  edge:    { icon: '🔵', name: 'Edge' },
+  firefox: { icon: '🦊', name: 'Firefox' },
+  safari:  { icon: '🧭', name: 'Safari' },
+  brave:   { icon: '🦁', name: 'Brave' },
+  opera:   { icon: '🔴', name: 'Opera' },
 };
+
+function ctaLabel(browser: Browser): string {
+  if (hasOneClickInstall(browser)) return oneClickCta(browser);
+  return `Get for ${BROWSER_LABELS[browser].name}`;
+}
 
 function extensionDownloadUrl(browser: Browser) {
   const base = import.meta.env.BASE_URL.replace(/\/$/, '');
@@ -75,22 +84,20 @@ const features = [
   {
     icon: "🧩",
     title: "Chrome, Edge, Firefox, Brave, and Opera",
-    desc: "One download works across all major browsers. Reedr runs as a local extension — nothing leaves your device, no account required."
+    desc: "Install from the official store in one click — no Developer mode. Reedr runs as a local extension; chat history stays on your device."
   }
 ];
 
 export default function Home() {
   const [installOpen, setInstallOpen] = useState(false);
+  const [storeOpened, setStoreOpened] = useState(false);
   const [browser, setBrowser] = useState<Browser>('chrome');
 
   useEffect(() => {
     setBrowser(detectBrowser());
   }, []);
 
-  async function handleDownload(b: Browser = browser) {
-    setBrowser(b);
-    setInstallOpen(true);
-
+  async function handleSideloadDownload(b: Browser = browser) {
     const apiUrl = extensionDownloadUrl(b);
     const fallbackUrl = staticExtensionZipUrl();
 
@@ -111,6 +118,20 @@ export default function Home() {
       a.download = 'reedr-extension.zip';
       a.click();
     }
+  }
+
+  function handleInstall(b: Browser = browser) {
+    setBrowser(b);
+    const store = storeUrlFor(b);
+    if (store) {
+      window.open(store, '_blank', 'noopener,noreferrer');
+      setStoreOpened(true);
+      setInstallOpen(true);
+      return;
+    }
+    setStoreOpened(false);
+    setInstallOpen(true);
+    void handleSideloadDownload(b);
   }
 
   return (
@@ -150,13 +171,18 @@ export default function Home() {
               <div className="flex flex-col sm:flex-row gap-4">
                 <button
                   type="button"
-                  onClick={() => handleDownload(browser)}
+                  onClick={() => handleInstall(browser)}
                   className="bg-primary text-primary-foreground px-8 py-4 flex items-center justify-center gap-3 rounded-full hover:bg-primary/80 transition-colors duration-300 w-full sm:w-auto font-medium"
                 >
                   <span>{BROWSER_LABELS[browser].icon}</span>
-                  <span className="tracking-wide">{BROWSER_LABELS[browser].cta}</span>
+                  <span className="tracking-wide">{ctaLabel(browser)}</span>
                 </button>
               </div>
+              <p className="text-muted-foreground text-xs max-w-md">
+                {hasOneClickInstall(browser)
+                  ? 'Installs from the official store — no Developer mode.'
+                  : 'One-click store install lights up after Chrome Web Store publishing. Until then, the button starts the zip install guide.'}
+              </p>
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-muted-foreground text-xs">Also works on</span>
                 {(['chrome', 'edge', 'firefox', 'brave', 'opera'] as Browser[])
@@ -165,7 +191,7 @@ export default function Home() {
                     <button
                       key={b}
                       type="button"
-                      onClick={() => handleDownload(b)}
+                      onClick={() => handleInstall(b)}
                       className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground border border-border hover:border-accent/50 rounded-full px-3 py-1 transition-colors"
                     >
                       <span>{BROWSER_LABELS[b].icon}</span>
@@ -242,7 +268,7 @@ export default function Home() {
               {
                 num: "Step one",
                 title: "Install the extension.",
-                desc: "Download the zip and load it into Chrome, Edge, Firefox, Brave, Opera, or Safari. Optional account unlocks Reedr Plus memory. Takes under a minute."
+                desc: "Click Add to Chrome (or your browser’s store). No Developer mode. Optional account unlocks Reedr Plus memory. Takes under a minute."
               },
               {
                 num: "Step two",
@@ -398,18 +424,19 @@ export default function Home() {
                 ))}
               </div>
 
-              {/* Download button */}
               <button
-                onClick={() => handleDownload(browser)}
+                onClick={() => handleInstall(browser)}
                 className="inline-flex items-center justify-center gap-3 bg-primary text-primary-foreground px-8 py-5 rounded-2xl hover:bg-primary/80 transition-colors duration-300 font-medium text-lg w-full text-center"
               >
-                <span className="text-xl">⬇</span>
-                <span>{BROWSER_LABELS[browser].cta}</span>
+                <span className="text-xl">{hasOneClickInstall(browser) ? '＋' : '⬇'}</span>
+                <span>{ctaLabel(browser)}</span>
                 <span className="text-sm opacity-60 font-normal">— free</span>
               </button>
 
               <p className="text-xs text-muted-foreground/50 text-center">
-                Install guide opens right after download
+                {hasOneClickInstall(browser)
+                  ? 'Opens the official store — no Developer mode'
+                  : 'Install guide opens right after download'}
               </p>
             </motion.div>
 
@@ -529,17 +556,17 @@ export default function Home() {
           </div>
 
           <button
-            onClick={() => handleDownload(browser)}
+            onClick={() => handleInstall(browser)}
             className="mt-2 bg-primary text-primary-foreground px-10 py-5 inline-flex items-center justify-center gap-3 rounded-full hover:bg-primary/80 transition-colors duration-300 w-full sm:w-auto font-medium text-lg"
           >
-            <span>⬇</span>
-            <span>{BROWSER_LABELS[browser].cta}</span>
+            <span>{hasOneClickInstall(browser) ? '＋' : '⬇'}</span>
+            <span>{ctaLabel(browser)}</span>
             <span className="text-sm opacity-60 font-normal">— free</span>
           </button>
 
           <p className="text-xs text-muted-foreground/60 max-w-sm leading-relaxed">
-            Free to install. Works on Chrome, Edge, and Firefox.{' '}
-            By downloading you agree to our{' '}
+            Free to install. Works on Chrome, Edge, Firefox, Brave, and Opera.{' '}
+            By installing you agree to our{' '}
             <a href="/terms" className="underline hover:text-muted-foreground transition-colors">Terms of Use</a>
             {' '}and{' '}
             <a href="/privacy" className="underline hover:text-muted-foreground transition-colors">Privacy Policy</a>.
@@ -547,7 +574,14 @@ export default function Home() {
         </div>
       </section>
 
-      {installOpen && <InstallModal onClose={() => setInstallOpen(false)} initialBrowser={browser} />}
+      {installOpen && (
+        <InstallModal
+          onClose={() => setInstallOpen(false)}
+          initialBrowser={browser}
+          storeOpened={storeOpened}
+          onSideloadDownload={handleSideloadDownload}
+        />
+      )}
     </Layout>
   );
 }

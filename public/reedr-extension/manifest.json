@@ -3,6 +3,7 @@
   "name": "Reedr — AI Web Companion",
   "version": "1.1.0",
   "description": "Reedr reads every page you visit, chats about it, and saves organized threads and summaries — with Free and Plus memory tiers.",
+  "homepage_url": "https://gulliversoftwaretech.com",
   "icons": {
     "16": "icon16.png",
     "48": "icon48.png",

@@ -107,16 +107,13 @@ check(existsSync(path.join(root, 'public', 'reedr-demo.html')), 'interactive dem
 check(existsSync(path.join(root, 'src', 'pages', 'Home.tsx')), 'website Home page present', 'Home.tsx missing');
 check(existsSync(path.join(root, 'src', 'components', 'InstallGuide.tsx')), 'InstallGuide present', 'InstallGuide missing');
 
-console.log(`\nHow to see it working:`);
-console.log(`  1. Website UI:     npm install && npm run dev`);
-console.log(`     Then open http://localhost:5173/`);
-console.log(`  2. Fake UI demo:   http://localhost:5173/reedr-demo.html`);
-console.log(`  3. Real extension: npm run pack:extension`);
-console.log(`     Chrome → chrome://extensions → Developer mode → Load unpacked`);
-console.log(`     Select public/reedr-extension/ (or extract the zip folder)`);
-console.log(`     Open any article → purple R button → ask a question`);
-console.log(`     If chat fails: Reedr Settings → set API URL ending in /api → Test`);
-console.log(`  4. Full check:     npm test`);
+console.log(`\nHow to test the real extension on your computer:`);
+console.log(`  npm run prepare:unpacked`);
+console.log(`  Chrome → chrome://extensions → Developer mode ON → Load unpacked`);
+console.log(`  Select the reedr-unpacked/ folder this creates`);
+console.log(`  Open any article → purple R → ask a question`);
+console.log(`  Step-by-step page: npm run dev → http://localhost:5173/how-to-test.html`);
+console.log(`  (Store listings in review have no install button — use Load unpacked.)`);
 
 if (failed) {
   console.error(`\n${failed} check(s) failed`);

@@ -9,6 +9,8 @@
     "serve": "PORT=${PORT:-5173} BASE_PATH=${BASE_PATH:-/} vite preview --config vite.config.ts --host 0.0.0.0",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "pack:extension": "node scripts/pack-extension.mjs",
+    "pack:cws": "node scripts/pack-extension.mjs --cws",
+    "prepare:unpacked": "node scripts/prepare-unpacked.mjs",
     "verify": "node scripts/verify.mjs",
     "test": "npm run verify && npm run typecheck && npm run build"
   },

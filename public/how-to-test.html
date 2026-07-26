@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>How to test Reedr on your computer</title>
+  <style>
+    :root {
+      --bg: #09091a;
+      --card: #13132b;
+      --border: #2a2a4a;
+      --text: #f0f0f8;
+      --muted: #9090b8;
+      --accent: #a78bfa;
+      --accent-strong: #6d5ffa;
+      --ok: #28c840;
+      --warn: #f5b942;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif;
+      background: radial-gradient(ellipse at top, #1a1535 0%, var(--bg) 55%);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.55;
+    }
+    main {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 48px 20px 80px;
+    }
+    .logo {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .logo-mark {
+      width: 36px; height: 36px; border-radius: 10px;
+      background: linear-gradient(135deg, var(--accent-strong), var(--accent));
+      display: grid; place-items: center; font-weight: 800;
+    }
+    h1 { font-size: 2rem; margin: 0 0 10px; letter-spacing: -0.02em; }
+    .lead { color: var(--muted); margin: 0 0 28px; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px 22px;
+      margin-bottom: 16px;
+    }
+    .card h2 {
+      margin: 0 0 8px;
+      font-size: 1.05rem;
+    }
+    .card p, .card li { color: var(--muted); font-size: 0.95rem; }
+    .card ol { margin: 10px 0 0; padding-left: 1.2rem; }
+    .card li { margin: 0.45rem 0; }
+    code, kbd {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.85em;
+      background: #09091a;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.1em 0.4em;
+      color: var(--accent);
+    }
+    .ok { border-color: rgba(40,200,64,0.35); }
+    .ok h2 { color: var(--ok); }
+    .warn { border-color: rgba(245,185,66,0.35); }
+    .warn h2 { color: var(--warn); }
+    a { color: var(--accent); }
+    .btn {
+      display: inline-block;
+      margin-top: 8px;
+      background: linear-gradient(135deg, var(--accent-strong), #8b7cf8);
+      color: white;
+      text-decoration: none;
+      font-weight: 600;
+      border-radius: 10px;
+      padding: 10px 14px;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="logo">
+      <div class="logo-mark">R</div>
+      <strong>Reedr</strong>
+    </div>
+    <h1>Test the extension on your computer</h1>
+    <p class="lead">
+      If the Chrome Web Store listing is still in review, it won’t show an install button yet.
+      Use <strong>Load unpacked</strong> below — that’s the normal way to test while waiting on the store.
+    </p>
+
+    <div class="card ok">
+      <h2>Fastest path (about 1 minute)</h2>
+      <ol>
+        <li>On your computer, open this project folder in Terminal.</li>
+        <li>Run: <code>npm run prepare:unpacked</code></li>
+        <li>That creates a folder named <code>reedr-unpacked</code> with the API already configured.</li>
+        <li>Open Chrome and go to <code>chrome://extensions</code></li>
+        <li>Turn <strong>Developer mode</strong> ON (top-right toggle).</li>
+        <li>Click <strong>Load unpacked</strong>.</li>
+        <li>Select the <code>reedr-unpacked</code> folder (the folder itself, not a file inside it).</li>
+        <li>Open any news/article page. Click the purple <strong>R</strong> bottom-right and ask a question.</li>
+      </ol>
+      <p style="margin-top:12px">Edge: use <code>edge://extensions</code>. Brave: <code>brave://extensions</code>.</p>
+    </div>
+
+    <div class="card">
+      <h2>No npm? Use the zip you already have</h2>
+      <ol>
+        <li>Find <code>public/reedr-extension-cws.zip</code> in this repo (or download it from your site/GitHub).</li>
+        <li>Extract it. You should see <code>manifest.json</code> directly in the extracted folder.</li>
+        <li>Chrome → <code>chrome://extensions</code> → Developer mode ON → <strong>Load unpacked</strong>.</li>
+        <li>Select that extracted folder.</li>
+      </ol>
+    </div>
+
+    <div class="card warn">
+      <h2>Common mistakes</h2>
+      <ol>
+        <li><strong>Opening files from the zip</strong> — that only shows source code. You must use Load unpacked.</li>
+        <li><strong>Selecting the wrong folder</strong> — the folder you pick must contain <code>manifest.json</code>.</li>
+        <li><strong>“Reedr is not configured”</strong> — run <code>npm run prepare:unpacked</code> again, or open Reedr Settings and set API URL to <code>https://gulliversoftwaretech.com/api</code>, then Test → Save.</li>
+        <li><strong>No purple R</strong> — reload the webpage after installing. Some pages (Chrome Web Store, chrome:// pages) block extensions.</li>
+      </ol>
+    </div>
+
+    <div class="card">
+      <h2>If you want to test the Chrome Web Store submission</h2>
+      <ol>
+        <li>Open the <a href="https://chrome.google.com/webstore/devconsole" target="_blank" rel="noreferrer">Chrome Web Store Developer Dashboard</a>.</li>
+        <li>Open your Reedr item.</li>
+        <li>If status is <strong>Pending review</strong>, public install isn’t available yet — use Load unpacked above.</li>
+        <li>If you set visibility to <strong>Trusted testers</strong>, add your Google account under testers, then open the listing link while signed into that account and click Add to Chrome.</li>
+        <li>After it’s <strong>Published</strong>, anyone can install from the listing URL (no Developer mode).</li>
+      </ol>
+    </div>
+
+    <div class="card ok">
+      <h2>How you know it’s working</h2>
+      <ol>
+        <li>Purple <strong>R</strong> appears on a normal webpage.</li>
+        <li>Ask: “Summarize this in 3 bullets.”</li>
+        <li>You get a reply about <em>that</em> page — success.</li>
+      </ol>
+      <a class="btn" href="./reedr-demo.html">Preview the UI without installing</a>
+    </div>
+  </main>
+</body>
+</html>
