@@ -102,6 +102,8 @@ if (existsSync(zipPath)) {
 
 // Demo page for visual smoke test without installing
 check(existsSync(path.join(root, 'public', 'reedr-demo.html')), 'interactive demo page present (/reedr-demo.html)', 'reedr-demo.html missing');
+check(existsSync(path.join(root, 'public', 'how-to-test.html')), 'how-to-test.html present', 'how-to-test.html missing');
+check(existsSync(path.join(root, 'scripts', 'prepare-unpacked.mjs')), 'prepare:unpacked script present', 'prepare-unpacked.mjs missing');
 
 // Website entrypoints
 check(existsSync(path.join(root, 'src', 'pages', 'Home.tsx')), 'website Home page present', 'Home.tsx missing');
