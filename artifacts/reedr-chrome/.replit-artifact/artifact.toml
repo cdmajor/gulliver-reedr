@@ -11,7 +11,7 @@ paths = [ "/reedr-chrome/" ]
 localPort = 22410
 
 [services.development]
-run = "bash -c 'cd /home/runner/workspace/artifacts/reedr-chrome && python3 -m http.server 22410 --directory public'"
+run = "npx serve /home/runner/workspace/artifacts/reedr-chrome/public -l 22410 --no-clipboard"
 
 [services.production]
 build = [ "bash", "-lc", "cd artifacts/reedr-chrome && bash scripts/build.sh" ]
