@@ -14,7 +14,8 @@
     "smoke": "node scripts/smoke-extension.mjs",
     "screenshots:mac-pc": "node scripts/capture-mac-pc-screenshots.mjs",
     "verify": "node scripts/verify.mjs",
-    "test": "npm run verify && npm run smoke && npm run typecheck && npm run build"
+    "test": "npm run verify && npm run smoke && npm run typecheck && npm run build",
+    "screenshots:safari": "node scripts/capture-safari-screenshots.mjs"
   },
   "devDependencies": {
     "@hookform/resolvers": "^3.10.0",
