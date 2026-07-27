@@ -15,7 +15,8 @@
     "screenshots:mac-pc": "node scripts/capture-mac-pc-screenshots.mjs",
     "verify": "node scripts/verify.mjs",
     "test": "npm run verify && npm run smoke && npm run typecheck && npm run build",
-    "screenshots:safari": "node scripts/capture-safari-screenshots.mjs"
+    "screenshots:safari": "node scripts/capture-safari-screenshots.mjs",
+    "audit:install": "node scripts/audit-install.mjs"
   },
   "devDependencies": {
     "@hookform/resolvers": "^3.10.0",

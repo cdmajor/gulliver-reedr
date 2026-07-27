@@ -959,6 +959,10 @@
     isOpen = true;
     shadow.getElementById("v-btn").classList.remove("has-new");
     shadow.getElementById("v-panel").classList.add("open");
+    if (!apiUrl) {
+      showNoApiNotice();
+      return;
+    }
     if (activeView === "chat") shadow.getElementById("v-input").focus();
     if (messages.length === 0) showPrompts();
   }

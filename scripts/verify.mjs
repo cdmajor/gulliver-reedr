@@ -39,6 +39,8 @@ const required = [
   'memory.js',
   'options.html',
   'options.js',
+  'popup.html',
+  'popup.js',
   'icon16.png',
   'icon48.png',
   'icon128.png',

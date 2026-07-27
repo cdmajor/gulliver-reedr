@@ -85,39 +85,60 @@ const features = [
   {
     icon: "🧩",
     title: "Chrome, Edge, Firefox, Brave, and Opera",
-    desc: "Install from the official store in one click — no Developer mode. Reedr runs as a local extension; chat history stays on your device."
+    desc: "Works as a browser extension with chat history saved on your device. Chrome installs via zip today; store one-click lights up once the listing is published."
   }
 ];
 
 export default function Home() {
   const [installOpen, setInstallOpen] = useState(false);
   const [storeOpened, setStoreOpened] = useState(false);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
+  const [downloading, setDownloading] = useState(false);
   const [browser, setBrowser] = useState<Browser>('chrome');
 
   useEffect(() => {
     setBrowser(detectBrowser());
   }, []);
 
+  async function blobLooksLikeZip(blob: Blob): Promise<boolean> {
+    const buf = await blob.slice(0, 4).arrayBuffer();
+    const bytes = new Uint8Array(buf);
+    // PK\x03\x04 or PK\x05\x06 (empty) or PK\x07\x08
+    return bytes[0] === 0x50 && bytes[1] === 0x4b;
+  }
+
+  async function downloadZipFrom(url: string): Promise<void> {
+    const res = await fetch(url, { method: 'GET' });
+    if (!res.ok) throw new Error(`Download failed (HTTP ${res.status})`);
+    const blob = await res.blob();
+    if (!(await blobLooksLikeZip(blob))) {
+      throw new Error('Download was not a valid zip file');
+    }
+    const objectUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = objectUrl;
+    a.download = 'reedr-extension.zip';
+    a.click();
+    URL.revokeObjectURL(objectUrl);
+  }
+
   async function handleSideloadDownload(b: Browser = browser) {
+    setDownloading(true);
+    setDownloadError(null);
     const apiUrl = extensionDownloadUrl(b);
     const fallbackUrl = staticExtensionZipUrl();
-
     try {
-      const res = await fetch(apiUrl, { method: 'GET' });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const blob = await res.blob();
-      const objectUrl = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = objectUrl;
-      a.download = 'reedr-extension.zip';
-      a.click();
-      URL.revokeObjectURL(objectUrl);
+      try {
+        await downloadZipFrom(apiUrl);
+      } catch {
+        await downloadZipFrom(fallbackUrl);
+      }
     } catch {
-      // Local vite / missing API: serve the prebuilt zip from /public
-      const a = document.createElement('a');
-      a.href = fallbackUrl;
-      a.download = 'reedr-extension.zip';
-      a.click();
+      setDownloadError(
+        'Could not download reedr-extension.zip. Check your connection and try again, or open /reedr-extension.zip directly if your host serves it.',
+      );
+    } finally {
+      setDownloading(false);
     }
   }
 
@@ -182,8 +203,13 @@ export default function Home() {
               <p className="text-muted-foreground text-xs max-w-md">
                 {hasOneClickInstall(browser)
                   ? 'Installs from the official store — no Developer mode.'
-                  : 'One-click store install lights up after Chrome Web Store publishing. Until then, the button starts the zip install guide.'}
+                  : downloading
+                    ? 'Downloading reedr-extension.zip…'
+                    : 'Downloads a zip for Chrome. Follow the install guide (Developer mode → Load unpacked).'}
               </p>
+              {downloadError && (
+                <p className="text-destructive text-xs max-w-md">{downloadError}</p>
+              )}
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-muted-foreground text-xs">Also works on</span>
                 {(['chrome', 'edge', 'firefox', 'brave', 'opera'] as Browser[])
@@ -269,12 +295,14 @@ export default function Home() {
               {
                 num: "Step one",
                 title: "Install the extension.",
-                desc: "Click Add to Chrome (or your browser’s store). No Developer mode. Optional account unlocks Reedr Plus memory. Takes under a minute."
+                desc: hasOneClickInstall(browser)
+                  ? "Click Add to Chrome (or your browser’s store). No Developer mode. Optional account unlocks Reedr Plus memory."
+                  : "Download the zip, turn on Developer mode, and Load unpacked. Optional account unlocks Reedr Plus memory. Takes under a minute."
               },
               {
                 num: "Step two",
-                title: "Visit any page.",
-                desc: "Reedr reads it quietly in the background — articles, product pages, docs, threads, anything. He's ready before you've finished the first paragraph."
+                title: "Open a real webpage.",
+                desc: "Use an http(s) article — news, docs, or a blog. Refresh after installing. Reedr won’t appear on chrome:// pages or the new-tab page."
               },
               {
                 num: "Step three",
@@ -450,7 +478,7 @@ export default function Home() {
             >
               <div className="bg-[#0d0d22] border border-[#2a2a4a] rounded-2xl overflow-hidden shadow-2xl">
                 <div className="flex items-center gap-3 px-4 py-3 bg-[#13132b] border-b border-[#2a2a4a]">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#6d5ffa] to-[#a78bfa] flex items-center justify-center text-white text-sm font-bold">V</div>
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#6d5ffa] to-[#a78bfa] flex items-center justify-center text-white text-sm font-bold">R</div>
                   <div>
                     <div className="text-white text-sm font-semibold">Reedr</div>
                     <div className="text-[#6060a0] text-xs">theverge.com</div>
@@ -458,7 +486,7 @@ export default function Home() {
                 </div>
                 <div className="p-4 flex flex-col gap-3">
                   <div className="flex gap-2">
-                    <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[#6d5ffa] to-[#a78bfa] flex items-center justify-center text-white text-xs font-bold flex-shrink-0 mt-0.5">V</div>
+                    <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[#6d5ffa] to-[#a78bfa] flex items-center justify-center text-white text-xs font-bold flex-shrink-0 mt-0.5">R</div>
                     <div className="bg-[#1a1a38] text-[#e0e0f8] text-sm rounded-2xl rounded-tl px-3 py-2.5 max-w-[85%] leading-relaxed">
                       This piece is arguing AI companions will reshape how people process news. The most interesting point is buried in paragraph four — want me to pull it out?
                     </div>
@@ -470,7 +498,7 @@ export default function Home() {
                     <div className="w-6 h-6 rounded-full bg-[#2a2a4a] flex items-center justify-center text-[#a0a0c0] text-xs flex-shrink-0 mt-0.5">U</div>
                   </div>
                   <div className="flex gap-2">
-                    <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[#6d5ffa] to-[#a78bfa] flex items-center justify-center text-white text-xs font-bold flex-shrink-0 mt-0.5">V</div>
+                    <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[#6d5ffa] to-[#a78bfa] flex items-center justify-center text-white text-xs font-bold flex-shrink-0 mt-0.5">R</div>
                     <div className="bg-[#1a1a38] text-[#e0e0f8] text-sm rounded-2xl rounded-tl px-3 py-2.5 max-w-[85%] leading-relaxed">
                       The counterargument — which this piece doesn't fully address — is that personalized AI filters could deepen news bubbles rather than break them…
                     </div>
@@ -581,6 +609,8 @@ export default function Home() {
           initialBrowser={browser}
           storeOpened={storeOpened}
           onSideloadDownload={handleSideloadDownload}
+          downloading={downloading}
+          downloadError={downloadError}
         />
       )}
     </Layout>

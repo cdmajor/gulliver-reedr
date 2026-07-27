@@ -48,6 +48,8 @@ interface InstallModalProps {
   /** When true, user already opened the store listing from the CTA. */
   storeOpened?: boolean;
   onSideloadDownload?: (browser: Browser) => void;
+  downloading?: boolean;
+  downloadError?: string | null;
 }
 
 export function InstallModal({
@@ -55,6 +57,8 @@ export function InstallModal({
   initialBrowser,
   storeOpened = false,
   onSideloadDownload,
+  downloading = false,
+  downloadError = null,
 }: InstallModalProps) {
   const [browser, setBrowser] = useState<Browser>(initialBrowser ?? 'chrome');
   const [copied, setCopied] = useState(false);
@@ -242,10 +246,17 @@ export function InstallModal({
                     <button
                       type="button"
                       onClick={() => onSideloadDownload(browser)}
-                      className="w-full py-3 rounded-xl bg-[#1e1e40] hover:bg-[#2a2a50] text-white text-sm font-medium transition-colors"
+                      disabled={downloading}
+                      className="w-full py-3 rounded-xl bg-[#1e1e40] hover:bg-[#2a2a50] text-white text-sm font-medium transition-colors disabled:opacity-60"
                     >
-                      Download reedr-extension.zip
+                      {downloading ? 'Downloading…' : 'Download reedr-extension.zip'}
                     </button>
+                  )}
+                  {downloadError && (
+                    <p className="text-[#f87171] text-xs leading-relaxed">{downloadError}</p>
+                  )}
+                  {downloading && (
+                    <p className="text-[#a78bfa] text-xs">Wait for the download to finish before extracting.</p>
                   )}
 
                   <Step n={1} title="Extract the zip">
@@ -279,7 +290,12 @@ export function InstallModal({
                         Click <strong className="text-white">Load unpacked</strong>, then select the{' '}
                         <code className="text-[#a78bfa] font-mono text-[12px]">reedr-extension</code>{' '}
                         <strong className="text-white">folder</strong> — not any file inside it.
+                        The folder you pick must contain <code className="text-[#a78bfa] font-mono text-[12px]">manifest.json</code> next to{' '}
+                        <code className="text-[#a78bfa] font-mono text-[12px]">background.js</code>.
                       </Step>
+                      <p className="text-[#c4a35a] text-[11px] leading-relaxed -mt-2 pl-9">
+                        Chrome may warn about developer-mode extensions after restart — click Keep / Enable to keep Reedr installed until the Chrome Web Store listing is live.
+                      </p>
                     </>
                   )}
 
@@ -326,8 +342,12 @@ export function InstallModal({
 
                   <Step n={4} title="Check that it works">
                     <ol className="list-decimal pl-4 space-y-1.5">
-                      <li>Open any article (news, docs, blog).</li>
-                      <li>Look for the purple <strong className="text-white">R</strong> button bottom-right.</li>
+                      <li>
+                        Open a <strong className="text-white">new http(s) article</strong> (news, docs, blog) — or{' '}
+                        <strong className="text-white">refresh</strong> the page. Reedr does not appear on{' '}
+                        <code className="text-[#a78bfa] font-mono text-[12px]">chrome://</code> pages, the new-tab page, or the Chrome Web Store.
+                      </li>
+                      <li>Look for the purple <strong className="text-white">R</strong> button bottom-right (or click the Reedr icon in the toolbar).</li>
                       <li>Click it and ask something like <em className="text-[#c0c0e8]">“Summarize this in 3 bullets.”</em></li>
                       <li>
                         If chat says it isn’t configured: open Reedr Settings, paste your API URL ending in{' '}
