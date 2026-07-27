@@ -21,10 +21,12 @@ const root = path.resolve(__dirname, '..');
 const srcDir = path.join(root, 'public', 'reedr-extension');
 
 const isCws = process.argv.includes('--cws') || process.env.PACK_TARGET === 'cws';
-const defaultCwsApi = 'https://gulliversoftwaretech.com/api';
+const defaultProdApi = 'https://gulliversoftwaretech.com/api';
+// Chrome downloads (Mac + PC) need a baked API; default to production unless explicitly left blank.
 const apiUrl = (
-  process.env.REEDR_API_URL ||
-  (isCws ? defaultCwsApi : '')
+  process.env.REEDR_API_URL !== undefined
+    ? process.env.REEDR_API_URL
+    : defaultProdApi
 ).trim().replace(/\/$/, '');
 
 const outZip = path.join(

@@ -39,6 +39,7 @@ function extensionDownloadUrl(browser: Browser) {
 
 function staticExtensionZipUrl() {
   const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+  // Chrome download fallback: pre-baked production API zip (works on Mac + Windows Chrome)
   return window.location.origin + base + '/reedr-extension.zip';
 }
 

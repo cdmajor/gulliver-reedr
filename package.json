@@ -12,6 +12,7 @@
     "pack:cws": "node scripts/pack-extension.mjs --cws",
     "prepare:unpacked": "node scripts/prepare-unpacked.mjs",
     "smoke": "node scripts/smoke-extension.mjs",
+    "screenshots:mac-pc": "node scripts/capture-mac-pc-screenshots.mjs",
     "verify": "node scripts/verify.mjs",
     "test": "npm run verify && npm run smoke && npm run typecheck && npm run build"
   },
