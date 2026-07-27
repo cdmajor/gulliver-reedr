@@ -9,6 +9,7 @@ id = "artifacts/reedr-safari"
 [deployment]
 router = "path"
 deploymentTarget = "static"
+publicDir = "dist/public"
 
 [workflows]
 runButton = "Project"
@@ -50,3 +51,15 @@ outputType = "webview"
 
 [nix]
 channel = "stable-24_05"
+
+[[ports]]
+localPort = 22363
+externalPort = 80
+
+[[ports]]
+localPort = 22410
+externalPort = 3000
+
+[[ports]]
+localPort = 22411
+externalPort = 3001
