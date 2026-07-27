@@ -8,9 +8,10 @@ id = "artifacts/reedr-safari"
 
 [deployment]
 router = "path"
-deploymentTarget = "static"
+deploymentTarget = "autoscale"
 publicDir = "dist/public"
 build = ["bash", "scripts/build-all.sh"]
+run = ["node", "server.js"]
 
 [workflows]
 runButton = "Project"
