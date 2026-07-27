@@ -9,8 +9,8 @@ id = "artifacts/reedr-safari"
 [deployment]
 router = "path"
 deploymentTarget = "static"
-publicDir = "dist/public"
 build = ["bash", "scripts/build-all.sh"]
+publicDir = "dist/public"
 
 [workflows]
 runButton = "Project"
@@ -34,7 +34,7 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "bash -c 'cd /home/runner/workspace/artifacts/reedr-chrome && python3 -m http.server 22410 --directory public'"
+args = "node /home/runner/workspace/artifacts/reedr-chrome/server.js"
 
 [workflows.workflow.metadata]
 outputType = "webview"
@@ -45,7 +45,7 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "bash -c 'cd /home/runner/workspace/artifacts/reedr-safari && python3 -m http.server 22411 --directory public'"
+args = "node /home/runner/workspace/artifacts/reedr-safari/server.js"
 
 [workflows.workflow.metadata]
 outputType = "webview"

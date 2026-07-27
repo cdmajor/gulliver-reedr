@@ -1,7 +1,7 @@
 // Reedr background service worker
 // Works on Chrome, Edge, and Firefox.
 // API_URL is injected at download time — no setup required.
-const BAKED_API_URL = "https://gulliversoftwaretech.com/api";
+const BAKED_API_URL = "%%REEDR_API_URL%%";
 
 // Cross-browser shim: Firefox exposes `browser`, Chrome/Edge expose `chrome`.
 const browserAPI = (typeof browser !== "undefined" && browser.runtime) ? browser : chrome;
