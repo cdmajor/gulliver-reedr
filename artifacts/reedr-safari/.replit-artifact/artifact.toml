@@ -11,7 +11,7 @@ paths = [ "/reedr-safari/" ]
 localPort = 22411
 
 [services.development]
-run = "npx serve /home/runner/workspace/artifacts/reedr-safari/public -l 22411 --no-clipboard"
+run = "node /home/runner/workspace/artifacts/reedr-safari/server.js"
 
 [services.production]
 build = [ "bash", "-lc", "cd artifacts/reedr-safari && bash scripts/build.sh" ]
