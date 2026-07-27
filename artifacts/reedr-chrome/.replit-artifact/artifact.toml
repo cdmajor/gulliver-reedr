@@ -1,0 +1,27 @@
+kind = "web"
+previewPath = "/reedr-chrome/"
+title = "Reedr for Chrome"
+version = "1.1.2"
+id = "artifacts/reedr-chrome"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/reedr-chrome/" ]
+localPort = 22410
+
+[services.development]
+run = "bash -c 'cd /home/runner/workspace/artifacts/reedr-chrome && python3 -m http.server 22410 --directory public'"
+
+[services.production]
+build = [ "bash", "-lc", "cd artifacts/reedr-chrome && bash scripts/build.sh" ]
+serve = "static"
+publicDir = "artifacts/reedr-chrome/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "22410"
+BASE_PATH = "/reedr-chrome/"

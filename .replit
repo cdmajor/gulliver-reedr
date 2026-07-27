@@ -1,0 +1,52 @@
+modules = ["nodejs-20", "web"]
+
+[[artifacts]]
+id = "artifacts/reedr-chrome"
+
+[[artifacts]]
+id = "artifacts/reedr-safari"
+
+[deployment]
+router = "path"
+deploymentTarget = "static"
+
+[workflows]
+runButton = "Project"
+
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "artifacts/reedr-chrome: web"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "artifacts/reedr-safari: web"
+
+[[workflows.workflow]]
+name = "artifacts/reedr-chrome: web"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "bash -c 'cd /home/runner/workspace/artifacts/reedr-chrome && python3 -m http.server 22410 --directory public'"
+
+[workflows.workflow.metadata]
+outputType = "webview"
+
+[[workflows.workflow]]
+name = "artifacts/reedr-safari: web"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "bash -c 'cd /home/runner/workspace/artifacts/reedr-safari && python3 -m http.server 22411 --directory public'"
+
+[workflows.workflow.metadata]
+outputType = "webview"
+
+[nix]
+channel = "stable-24_05"

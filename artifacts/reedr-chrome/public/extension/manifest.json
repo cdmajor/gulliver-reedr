@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Reedr for Chrome",
   "version": "1.1.2",
-  "description": "Reedr for Google Chrome \u2014 reads every page you visit, chats about it, and saves organized threads and summaries.",
+  "description": "Reedr for Google Chrome — reads every page you visit, chats about it, and saves organized threads and summaries.",
   "homepage_url": "https://gulliversoftwaretech.com",
   "icons": {
     "16": "icon16.png",

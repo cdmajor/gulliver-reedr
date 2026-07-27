@@ -16,7 +16,7 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, '..');
-const srcDir = path.join(root, 'public', 'reedr-extension');
+const srcDir = path.join(root, 'artifacts', 'reedr-chrome', 'extension');
 const outDir = path.join(root, 'reedr-unpacked');
 const apiUrl = (process.env.REEDR_API_URL || 'https://gulliversoftwaretech.com/api')
   .trim()
@@ -37,7 +37,7 @@ const files = [
 ];
 
 if (!existsSync(srcDir)) {
-  console.error('Missing public/reedr-extension/');
+  console.error('Missing artifacts/reedr-chrome/extension/');
   process.exit(1);
 }
 

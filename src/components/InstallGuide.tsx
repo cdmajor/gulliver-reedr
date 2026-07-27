@@ -249,7 +249,11 @@ export function InstallModal({
                       disabled={downloading}
                       className="w-full py-3 rounded-xl bg-[#1e1e40] hover:bg-[#2a2a50] text-white text-sm font-medium transition-colors disabled:opacity-60"
                     >
-                      {downloading ? 'Downloading…' : 'Download reedr-extension.zip'}
+                      {downloading
+                        ? 'Downloading…'
+                        : browser === 'safari'
+                          ? 'Download reedr-for-safari.zip'
+                          : 'Download reedr-for-chrome.zip'}
                     </button>
                   )}
                   {downloadError && (

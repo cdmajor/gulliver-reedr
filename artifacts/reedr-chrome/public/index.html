@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Reedr for Chrome</title>
+  <style>
+    :root {
+      --bg: #0f0a1a;
+      --fg: #f4f0ff;
+      --muted: #b7a8d9;
+      --accent: #8b5cf6;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Segoe UI", system-ui, sans-serif;
+      color: var(--fg);
+      background:
+        radial-gradient(1200px 600px at 10% -10%, #3b1d6d 0%, transparent 55%),
+        radial-gradient(900px 500px at 100% 0%, #1e3a5f 0%, transparent 50%),
+        var(--bg);
+      display: grid;
+      place-items: center;
+      padding: 2rem;
+    }
+    main { max-width: 34rem; width: 100%; }
+    h1 { font-size: 2rem; margin: 0 0 0.5rem; letter-spacing: -0.02em; }
+    p { color: var(--muted); line-height: 1.55; }
+    .actions { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 1.5rem; }
+    a.btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.75rem 1.15rem;
+      border-radius: 0.65rem;
+      text-decoration: none;
+      font-weight: 600;
+      background: var(--accent);
+      color: white;
+    }
+    a.btn.secondary {
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.25);
+      color: var(--fg);
+    }
+    code { color: #d8c7ff; font-size: 0.9em; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Reedr for Chrome</h1>
+    <p>
+      Separate Chrome extension package for Replit / GitHub download.
+      Unzip, open <code>chrome://extensions</code>, enable Developer mode, then Load unpacked.
+    </p>
+    <div class="actions">
+      <a class="btn" href="./reedr-for-chrome.zip" download>Download Chrome zip</a>
+      <a class="btn secondary" href="./extension/manifest.json">Browse extension files</a>
+    </div>
+  </main>
+</body>
+</html>

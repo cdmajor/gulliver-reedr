@@ -1,0 +1,27 @@
+kind = "web"
+previewPath = "/reedr-safari/"
+title = "Reedr for Safari"
+version = "1.1.2"
+id = "artifacts/reedr-safari"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/reedr-safari/" ]
+localPort = 22411
+
+[services.development]
+run = "bash -c 'cd /home/runner/workspace/artifacts/reedr-safari && python3 -m http.server 22411 --directory public'"
+
+[services.production]
+build = [ "bash", "-lc", "cd artifacts/reedr-safari && bash scripts/build.sh" ]
+serve = "static"
+publicDir = "artifacts/reedr-safari/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "22411"
+BASE_PATH = "/reedr-safari/"

@@ -10,8 +10,13 @@ import { spawnSync } from 'node:child_process';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, '..');
-const extDir = path.join(root, 'public', 'reedr-extension');
+const chromeArtifact = path.join(root, 'artifacts', 'reedr-chrome', 'extension');
+const safariArtifact = path.join(root, 'artifacts', 'reedr-safari', 'extension');
+const extDir = chromeArtifact;
 const zipPath = path.join(root, 'public', 'reedr-extension.zip');
+const safariZipPath = path.join(root, 'public', 'reedr-safari-extension.zip');
+const chromeArtifactZip = path.join(root, 'artifacts', 'reedr-chrome', 'public', 'reedr-for-chrome.zip');
+const safariArtifactZip = path.join(root, 'artifacts', 'reedr-safari', 'public', 'reedr-for-safari.zip');
 
 let failed = 0;
 
@@ -30,6 +35,20 @@ function check(condition, passMsg, failMsg) {
 }
 
 console.log('Reedr verify\n');
+
+check(existsSync(chromeArtifact), 'artifacts/reedr-chrome/extension present', 'missing artifacts/reedr-chrome/extension');
+check(existsSync(safariArtifact), 'artifacts/reedr-safari/extension present', 'missing artifacts/reedr-safari/extension');
+check(
+  existsSync(path.join(root, 'artifacts', 'reedr-chrome', '.replit-artifact', 'artifact.toml')),
+  'Replit discovers Reedr for Chrome artifact',
+  'missing artifacts/reedr-chrome/.replit-artifact/artifact.toml',
+);
+check(
+  existsSync(path.join(root, 'artifacts', 'reedr-safari', '.replit-artifact', 'artifact.toml')),
+  'Replit discovers Reedr for Safari artifact',
+  'missing artifacts/reedr-safari/.replit-artifact/artifact.toml',
+);
+check(existsSync(path.join(root, '.replit')), 'root .replit registers both artifacts', 'missing .replit');
 
 // Extension source folder
 const required = [
@@ -87,7 +106,22 @@ const content = readFileSync(path.join(extDir, 'content.js'), 'utf8');
 check(content.includes('reedr') || content.includes('Reedr'), 'content script references Reedr', 'content script looks empty/wrong');
 
 // Zip shape
-check(existsSync(zipPath), 'public/reedr-extension.zip exists', 'public/reedr-extension.zip missing — run npm run pack:extension');
+check(existsSync(zipPath), 'public/reedr-extension.zip exists', 'public/reedr-extension.zip missing — run npm run pack:chrome');
+check(
+  existsSync(safariZipPath),
+  'public/reedr-safari-extension.zip exists',
+  'public/reedr-safari-extension.zip missing — run npm run pack:safari',
+);
+check(
+  existsSync(chromeArtifactZip),
+  'artifacts/reedr-chrome/public/reedr-for-chrome.zip exists',
+  'chrome artifact zip missing — run npm run pack:chrome',
+);
+check(
+  existsSync(safariArtifactZip),
+  'artifacts/reedr-safari/public/reedr-for-safari.zip exists',
+  'safari artifact zip missing — run npm run pack:safari',
+);
 if (existsSync(zipPath)) {
   const listing = spawnSync('unzip', ['-Z1', zipPath], { encoding: 'utf8' });
   if (listing.status !== 0) {
@@ -100,6 +134,15 @@ if (existsSync(zipPath)) {
       check(names.includes(file), `zip contains ${file}`, `zip missing ${file}`);
     }
   }
+}
+
+try {
+  const chromeManifest = JSON.parse(readFileSync(path.join(chromeArtifact, 'manifest.json'), 'utf8'));
+  const safariManifest = JSON.parse(readFileSync(path.join(safariArtifact, 'manifest.json'), 'utf8'));
+  check(chromeManifest.name === 'Reedr for Chrome', 'Chrome package is branded Reedr for Chrome', `Chrome name is ${chromeManifest.name}`);
+  check(safariManifest.name === 'Reedr for Safari', 'Safari package is branded Reedr for Safari', `Safari name is ${safariManifest.name}`);
+} catch (err) {
+  fail(`could not compare browser manifests: ${err.message}`);
 }
 
 // Demo page for visual smoke test without installing

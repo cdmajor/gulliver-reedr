@@ -1,0 +1,10 @@
+{
+  "name": "@workspace/reedr-chrome",
+  "version": "1.1.2",
+  "private": true,
+  "description": "Reedr for Chrome — standalone browser extension artifact",
+  "scripts": {
+    "build": "bash scripts/build.sh",
+    "dev": "python3 -m http.server 22410 --directory public"
+  }
+}

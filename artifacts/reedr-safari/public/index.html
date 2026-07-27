@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Reedr for Safari</title>
+  <style>
+    :root {
+      --bg: #071018;
+      --fg: #eef6ff;
+      --muted: #9db4c9;
+      --accent: #0a84ff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+      color: var(--fg);
+      background:
+        radial-gradient(1100px 560px at 0% 0%, #12355a 0%, transparent 55%),
+        radial-gradient(800px 480px at 100% 10%, #1a4d3a 0%, transparent 45%),
+        var(--bg);
+      display: grid;
+      place-items: center;
+      padding: 2rem;
+    }
+    main { max-width: 34rem; width: 100%; }
+    h1 { font-size: 2rem; margin: 0 0 0.5rem; letter-spacing: -0.02em; }
+    p { color: var(--muted); line-height: 1.55; }
+    .actions { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 1.5rem; }
+    a.btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.75rem 1.15rem;
+      border-radius: 0.65rem;
+      text-decoration: none;
+      font-weight: 600;
+      background: var(--accent);
+      color: white;
+    }
+    a.btn.secondary {
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.25);
+      color: var(--fg);
+    }
+    code { color: #b8dcff; font-size: 0.9em; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Reedr for Safari</h1>
+    <p>
+      Separate Safari Web Extension package for Replit / GitHub download.
+      On macOS, convert with <code>xcrun safari-web-extension-converter</code>, then enable under Safari → Settings → Extensions.
+    </p>
+    <div class="actions">
+      <a class="btn" href="./reedr-for-safari.zip" download>Download Safari zip</a>
+      <a class="btn secondary" href="./extension/manifest.json">Browse extension files</a>
+    </div>
+  </main>
+</body>
+</html>

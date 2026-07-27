@@ -37,10 +37,12 @@ function extensionDownloadUrl(browser: Browser) {
   );
 }
 
-function staticExtensionZipUrl() {
+function staticExtensionZipUrl(browser: Browser) {
   const base = import.meta.env.BASE_URL.replace(/\/$/, '');
-  // Chrome download fallback: pre-baked production API zip (works on Mac + Windows Chrome)
-  return window.location.origin + base + '/reedr-extension.zip';
+  // Separate static zips so Chrome and Safari packages stay independently downloadable.
+  const file =
+    browser === 'safari' ? '/reedr-safari-extension.zip' : '/reedr-extension.zip';
+  return window.location.origin + base + file;
 }
 
 const fadeUp = {
@@ -107,7 +109,7 @@ export default function Home() {
     return bytes[0] === 0x50 && bytes[1] === 0x4b;
   }
 
-  async function downloadZipFrom(url: string): Promise<void> {
+  async function downloadZipFrom(url: string, filename: string): Promise<void> {
     const res = await fetch(url, { method: 'GET' });
     if (!res.ok) throw new Error(`Download failed (HTTP ${res.status})`);
     const blob = await res.blob();
@@ -117,7 +119,7 @@ export default function Home() {
     const objectUrl = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = objectUrl;
-    a.download = 'reedr-extension.zip';
+    a.download = filename;
     a.click();
     URL.revokeObjectURL(objectUrl);
   }
@@ -126,16 +128,18 @@ export default function Home() {
     setDownloading(true);
     setDownloadError(null);
     const apiUrl = extensionDownloadUrl(b);
-    const fallbackUrl = staticExtensionZipUrl();
+    const fallbackUrl = staticExtensionZipUrl(b);
+    const filename =
+      b === 'safari' ? 'reedr-for-safari.zip' : 'reedr-for-chrome.zip';
     try {
       try {
-        await downloadZipFrom(apiUrl);
+        await downloadZipFrom(apiUrl, filename);
       } catch {
-        await downloadZipFrom(fallbackUrl);
+        await downloadZipFrom(fallbackUrl, filename);
       }
     } catch {
       setDownloadError(
-        'Could not download reedr-extension.zip. Check your connection and try again, or open /reedr-extension.zip directly if your host serves it.',
+        `Could not download ${filename}. Check your connection and try again, or open ${fallbackUrl.replace(window.location.origin, '')} directly if your host serves it.`,
       );
     } finally {
       setDownloading(false);
@@ -204,7 +208,7 @@ export default function Home() {
                 {hasOneClickInstall(browser)
                   ? 'Installs from the official store — no Developer mode.'
                   : downloading
-                    ? 'Downloading reedr-extension.zip…'
+                    ? `Downloading reedr-for-${browser === 'safari' ? 'safari' : 'chrome'}.zip…`
                     : 'Downloads a zip for Chrome. Follow the install guide (Developer mode → Load unpacked).'}
               </p>
               {downloadError && (
