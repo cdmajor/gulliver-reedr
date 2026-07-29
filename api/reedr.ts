@@ -192,6 +192,107 @@ async function handleChat(req: any, res: any): Promise<void> {
   }
 }
 
+/**
+ * pdf.js (via pdf-parse) expects browser globals in some Node/bundled runtimes.
+ * Production was failing with: ReferenceError: DOMMatrix is not defined
+ */
+function ensureDomMatrixPolyfill(): void {
+  const g = globalThis as any;
+  if (typeof g.DOMMatrix !== "undefined") return;
+
+  class DOMMatrixPolyfill {
+    a = 1; b = 0; c = 0; d = 1; e = 0; f = 0;
+    m11 = 1; m12 = 0; m13 = 0; m14 = 0;
+    m21 = 0; m22 = 1; m23 = 0; m24 = 0;
+    m31 = 0; m32 = 0; m33 = 1; m34 = 0;
+    m41 = 0; m42 = 0; m43 = 0; m44 = 1;
+    is2D = true;
+    isIdentity = true;
+    constructor(_init?: unknown) {}
+    multiplySelf() { return this; }
+    preMultiplySelf() { return this; }
+    translateSelf() { return this; }
+    scaleSelf() { return this; }
+    scale3dSelf() { return this; }
+    rotateSelf() { return this; }
+    rotateAxisAngleSelf() { return this; }
+    skewXSelf() { return this; }
+    skewYSelf() { return this; }
+    invertSelf() { return this; }
+    setMatrixValue() { return this; }
+    transformPoint(p: any) { return p || { x: 0, y: 0, z: 0, w: 1 }; }
+    toFloat32Array() { return new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]); }
+    toFloat64Array() { return new Float64Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]); }
+    toString() { return "matrix(1, 0, 0, 1, 0, 0)"; }
+  }
+
+  g.DOMMatrix = DOMMatrixPolyfill;
+  g.DOMMatrixReadOnly = DOMMatrixPolyfill;
+}
+
+/** Find a usable PDFParse constructor across CJS/ESM/bundler shapes. */
+function resolvePdfParseConstructor(mod: any): ((opts: { data: Buffer }) => any) | null {
+  const bags = [mod, mod?.default, mod?.default?.default].filter(Boolean);
+  for (const bag of bags) {
+    if (typeof bag === "function" && bag.prototype && typeof bag.prototype.getText === "function") {
+      return bag;
+    }
+    for (const key of Object.keys(bag)) {
+      // Bundlers sometimes rename PDFParse → PDFParse2
+      if (!/^PDFParse/i.test(key)) continue;
+      const candidate = bag[key];
+      if (typeof candidate === "function") return candidate;
+    }
+  }
+  return null;
+}
+
+/**
+ * Extract text from a PDF buffer.
+ * Avoids `const { PDFParse } = await import(...)` — production bundlers rewrote that
+ * into `new PDFParse2(...)` and crashed with "PDFParse2 is not a constructor".
+ */
+async function extractTextFromPdfBuffer(buffer: Buffer): Promise<{ text: string; pages: number }> {
+  ensureDomMatrixPolyfill();
+
+  const mod: any = await import("pdf-parse");
+
+  // pdf-parse v1: default export is an async function(buffer) => { text, numpages }
+  const maybeFn =
+    (typeof mod === "function" && mod) ||
+    (typeof mod?.default === "function" && !(mod.default.prototype && mod.default.prototype.getText) && mod.default) ||
+    null;
+  if (maybeFn) {
+    const data = await maybeFn(buffer);
+    const text = String(data?.text || "")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 12000);
+    return { text, pages: Number(data?.numpages || data?.total || 0) || 0 };
+  }
+
+  const PDFParseCtor = resolvePdfParseConstructor(mod);
+  if (!PDFParseCtor) {
+    const keys = Object.keys(mod || {}).concat(Object.keys(mod?.default || {}));
+    throw new Error(`PDFParse constructor not found (module keys: ${keys.join(", ") || "none"})`);
+  }
+
+  const parser = new (PDFParseCtor as any)({ data: buffer });
+  const result = await parser.getText();
+  const fromPages = Array.isArray(result?.pages)
+    ? result.pages.map((p: any) => p?.text || "").join(" ")
+    : "";
+  const text = String(result?.text || fromPages)
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 12000);
+
+  // Destroy parser if the lib exposes it (frees workers / wasm)
+  try { await parser.destroy?.(); } catch (_) {}
+
+  return { text, pages: Number(result?.total || result?.pages?.length || 0) || 0 };
+}
+
 async function handleExtractPdf(req: any, res: any): Promise<void> {
   try {
     const { pdfUrl } = req.body as { pdfUrl: string };
@@ -219,18 +320,8 @@ async function handleExtractPdf(req: any, res: any): Promise<void> {
     }
 
     const buffer = Buffer.from(await pdfResp.arrayBuffer());
-    const { PDFParse } = await import("pdf-parse");
-    const parser = new PDFParse({ data: buffer });
-    const result = await parser.getText();
-
-    const text = result.pages
-      .map((p: any) => p.text)
-      .join(" ")
-      .replace(/\s+/g, " ")
-      .trim()
-      .slice(0, 12000);
-
-    res.json({ text, pages: result.total });
+    const { text, pages } = await extractTextFromPdfBuffer(buffer);
+    res.json({ text, pages });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
