@@ -36,6 +36,22 @@ http.createServer((req, res) => {
     return;
   }
 
+  // Legacy download URLs → existing artifact zips (do not rewrite zip contents)
+  if (urlPath === '/reedr-extension.zip' || urlPath === '/reedr-for-chrome.zip') {
+    const filePath = path.join(__dirname, 'artifacts/reedr-chrome/public/reedr-for-chrome.zip');
+    if (serveFile(res, filePath)) return;
+    res.writeHead(404);
+    res.end('Chrome zip not found');
+    return;
+  }
+  if (urlPath === '/reedr-safari-extension.zip' || urlPath === '/reedr-for-safari.zip') {
+    const filePath = path.join(__dirname, 'artifacts/reedr-safari/public/reedr-for-safari.zip');
+    if (serveFile(res, filePath)) return;
+    res.writeHead(404);
+    res.end('Safari zip not found');
+    return;
+  }
+
   // Route /reedr-chrome/* → artifacts/reedr-chrome/public/*
   if (urlPath.startsWith('/reedr-chrome/')) {
     const rel = urlPath.slice('/reedr-chrome/'.length) || 'index.html';

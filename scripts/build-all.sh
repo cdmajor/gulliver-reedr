@@ -17,6 +17,17 @@ mkdir -p "$WORKSPACE/dist/public/reedr-safari"
 cp -a "$WORKSPACE/artifacts/reedr-chrome/public/." "$WORKSPACE/dist/public/reedr-chrome/"
 cp -a "$WORKSPACE/artifacts/reedr-safari/public/." "$WORKSPACE/dist/public/reedr-safari/"
 
+# Legacy download URLs expected by the marketing site / bookmarks
+# (aliases only — do not regenerate or alter package contents here)
+if [[ -f "$WORKSPACE/artifacts/reedr-chrome/public/reedr-for-chrome.zip" ]]; then
+  cp -f "$WORKSPACE/artifacts/reedr-chrome/public/reedr-for-chrome.zip" \
+    "$WORKSPACE/dist/public/reedr-extension.zip"
+fi
+if [[ -f "$WORKSPACE/artifacts/reedr-safari/public/reedr-for-safari.zip" ]]; then
+  cp -f "$WORKSPACE/artifacts/reedr-safari/public/reedr-for-safari.zip" \
+    "$WORKSPACE/dist/public/reedr-safari-extension.zip"
+fi
+
 # Root redirect to Chrome page
 cat > "$WORKSPACE/dist/public/index.html" << 'EOF'
 <!DOCTYPE html>

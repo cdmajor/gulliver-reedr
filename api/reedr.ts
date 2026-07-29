@@ -66,16 +66,25 @@ async function buildExtensionZip(origin: string, browser: BrowserTarget): Promis
   const isFirefox = browser === "firefox";
   const isSafari = browser === "safari";
 
-  const extSrc = join(repoRoot(), "artifacts", "victor-web", "public", "reedr-extension");
+  // Chrome/Chromium + Safari packages live under artifacts/reedr-*/extension
+  // (legacy path artifacts/victor-web/public/reedr-extension no longer exists).
+  const extSrc = join(
+    repoRoot(),
+    "artifacts",
+    isSafari ? "reedr-safari" : "reedr-chrome",
+    "extension",
+  );
 
-  // Patch background.js — inject production API URL
-  const token = "%%REEDR_API_URL%%";
-  const needle = `const BAKED_API_URL = "${token}"`;
+  // Patch background.js — inject API URL for this download host.
+  // Accept either the %%REEDR_API_URL%% placeholder or an already-baked URL.
   let bg = readFileSync(join(extSrc, "background.js"), "utf8");
-  if (!bg.includes(needle)) {
-    throw new Error("Extension package missing BAKED_API_URL placeholder — rebuild the extension source");
+  if (!/const\s+BAKED_API_URL\s*=/.test(bg)) {
+    throw new Error("Extension package missing BAKED_API_URL — check background.js");
   }
-  bg = bg.replace(needle, `const BAKED_API_URL = ${JSON.stringify(apiUrl)}`);
+  bg = bg.replace(
+    /const\s+BAKED_API_URL\s*=\s*["'][^"']*["']\s*;/,
+    `const BAKED_API_URL = ${JSON.stringify(apiUrl)};`,
+  );
 
   // Patch manifest.json for browser-specific settings
   const manifest = JSON.parse(readFileSync(join(extSrc, "manifest.json"), "utf8"));

@@ -39,9 +39,11 @@ function extensionDownloadUrl(browser: Browser) {
 
 function staticExtensionZipUrl(browser: Browser) {
   const base = import.meta.env.BASE_URL.replace(/\/$/, '');
-  // Separate static zips so Chrome and Safari packages stay independently downloadable.
+  // Point at the artifact download URLs (existing zips — do not rename packages).
   const file =
-    browser === 'safari' ? '/reedr-safari-extension.zip' : '/reedr-extension.zip';
+    browser === 'safari'
+      ? '/reedr-safari/reedr-for-safari.zip'
+      : '/reedr-chrome/reedr-for-chrome.zip';
   return window.location.origin + base + file;
 }
 
