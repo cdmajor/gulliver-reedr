@@ -9,10 +9,13 @@ import {
   View,
 } from "react-native";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { GuideText } from "@/components/GuideText";
+import { OperationKeypad } from "@/components/OperationKeypad";
 import { ResearchLensPicker } from "@/components/ResearchLensPicker";
-import { generateResearchAid } from "@/lib/api";
+import { computeLetterOp, generateResearchAid } from "@/lib/api";
 import { getDeviceLanguageCode, languageDisplayName } from "@/lib/language";
+import { countWords } from "@/lib/operations";
 import { bookHasFullText } from "@/lib/parseBook";
 import { researchLensMeta } from "@/lib/research";
 import {
@@ -21,16 +24,29 @@ import {
   researchForBook,
   saveResearch,
 } from "@/lib/storage";
-import type { Book, ResearchLens, ResearchRecord } from "@/lib/types";
+import {
+  formatVerseLabel,
+  joinVerses,
+  toggleVerseNumber,
+  versesFromNumbers,
+  type Verse,
+} from "@/lib/verses";
+import type { Book, LetterOp, ResearchLens, ResearchRecord } from "@/lib/types";
 import { colors } from "@/theme/colors";
 
 export default function ResearchScreen() {
   const { id, chapterId } = useLocalSearchParams<{ id: string; chapterId?: string }>();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [book, setBook] = useState<Book | null>(null);
   const [records, setRecords] = useState<ResearchRecord[]>([]);
   const [lens, setLens] = useState<ResearchLens>("claims_evidence");
   const [busy, setBusy] = useState(false);
+  const [op, setOp] = useState<LetterOp>("summarize");
+  const [computeBusy, setComputeBusy] = useState(false);
+  const [verseSourceKey, setVerseSourceKey] = useState<string | null>(null);
+  const [verseNumbers, setVerseNumbers] = useState<number[]>([]);
+  const [versePool, setVersePool] = useState<Verse[]>([]);
 
   const refresh = useCallback(async () => {
     const books = await loadBooks();
@@ -57,6 +73,29 @@ export default function ResearchScreen() {
   );
 
   const meta = researchLensMeta(lens);
+
+  const selectedVerseText = useMemo(
+    () => joinVerses(versesFromNumbers(versePool, verseNumbers)),
+    [versePool, verseNumbers],
+  );
+
+  function toggleGuideVerse(verse: Verse, all: Verse[], key: string) {
+    if (verseSourceKey !== key) {
+      setVerseSourceKey(key);
+      setVerseNumbers([verse.n]);
+      setVersePool(all);
+      return;
+    }
+    const next = toggleVerseNumber(verseNumbers, verse.n);
+    if (!next.length) {
+      setVerseSourceKey(null);
+      setVerseNumbers([]);
+      setVersePool([]);
+      return;
+    }
+    setVerseNumbers(next);
+    setVersePool(all);
+  }
 
   async function runResearch() {
     if (!book) return;
@@ -100,10 +139,40 @@ export default function ResearchScreen() {
         createdAt: Date.now(),
       });
       setRecords(await researchForBook(book.id));
+      setVerseSourceKey(null);
+      setVerseNumbers([]);
+      setVersePool([]);
     } catch (err: any) {
       Alert.alert("Research aid failed", err.message || "Try again in a moment.");
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function runVerseCompute() {
+    if (!book || !selectedVerseText.trim()) return;
+    setComputeBusy(true);
+    try {
+      const context = chapter
+        ? chapter.text
+        : book.chapters.map((c) => `# ${c.title}\n${c.text}`).join("\n\n");
+      const reply = await computeLetterOp({
+        title: book.title,
+        author: book.author,
+        op,
+        selection: selectedVerseText,
+        chapterContext: context || book.description || selectedVerseText,
+        sourceLanguage: book.language,
+        outputLanguage: getDeviceLanguageCode(),
+      });
+      Alert.alert(
+        `${op} result`,
+        reply.length > 900 ? `${reply.slice(0, 900)}…` : reply,
+      );
+    } catch (err: any) {
+      Alert.alert("Compute failed", err.message || "Try another verse.");
+    } finally {
+      setComputeBusy(false);
     }
   }
 
@@ -116,65 +185,92 @@ export default function ResearchScreen() {
   }
 
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
-      <Text style={styles.kicker}>Research aid</Text>
-      <Text style={styles.title}>{book.title}</Text>
-      <Text style={styles.sub}>
-        {chapter ? `Chapter: ${chapter.title}` : "Whole book"} · Companion notes for your inquiry —
-        not a paper writer. Output in {languageDisplayName(getDeviceLanguageCode())}.
-      </Text>
+    <View style={styles.screen}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.content}>
+        <Text style={styles.kicker}>Research aid</Text>
+        <Text style={styles.title}>{book.title}</Text>
+        <Text style={styles.sub}>
+          {chapter ? `Chapter: ${chapter.title}` : "Whole book"} · Companion notes for your inquiry —
+          not a paper writer. Output in {languageDisplayName(getDeviceLanguageCode())}.
+        </Text>
 
-      {!hasText ? (
-        <View style={styles.banner}>
-          <Text style={styles.bannerTitle}>Stronger with a PDF or EPUB</Text>
-          <Text style={styles.bannerBody}>
-            Key concepts and research questions can run as a light orientation without the file.
-            Claims & evidence, source map, and reading notes need the text.
-          </Text>
-          <Pressable
-            style={styles.attachBtn}
-            onPress={() =>
-              router.push({ pathname: "/import", params: { bookId: book.id } })
-            }
-          >
-            <Text style={styles.attachBtnText}>Add PDF or EPUB</Text>
-          </Pressable>
-        </View>
-      ) : null}
+        {!hasText ? (
+          <View style={styles.banner}>
+            <Text style={styles.bannerTitle}>Stronger with a PDF or EPUB</Text>
+            <Text style={styles.bannerBody}>
+              Key concepts and research questions can run as a light orientation without the file.
+              Claims & evidence, source map, and reading notes need the text.
+            </Text>
+            <Pressable
+              style={styles.attachBtn}
+              onPress={() =>
+                router.push({ pathname: "/import", params: { bookId: book.id } })
+              }
+            >
+              <Text style={styles.attachBtnText}>Add PDF or EPUB</Text>
+            </Pressable>
+          </View>
+        ) : null}
 
-      <Text style={styles.sectionLabel}>Lens</Text>
-      <ResearchLensPicker value={lens} onChange={setLens} hasText={hasText} />
+        <Text style={styles.sectionLabel}>Lens</Text>
+        <ResearchLensPicker value={lens} onChange={setLens} hasText={hasText} />
 
-      <Pressable
-        style={[styles.primaryBtn, meta.needsText && !hasText && styles.primaryDisabled]}
-        onPress={runResearch}
-        disabled={busy}
-      >
-        {busy ? (
-          <ActivityIndicator color="#fff" />
+        <Pressable
+          style={[styles.primaryBtn, meta.needsText && !hasText && styles.primaryDisabled]}
+          onPress={runResearch}
+          disabled={busy}
+        >
+          {busy ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.primaryBtnText}>
+              {meta.needsText && !hasText
+                ? "Needs PDF/EPUB"
+                : saved
+                  ? `Refresh ${meta.label.toLowerCase()}`
+                  : `Generate ${meta.label.toLowerCase()}`}
+            </Text>
+          )}
+        </Pressable>
+
+        {saved ? (
+          <View style={styles.card}>
+            <Text style={styles.cardLabel}>{meta.label}</Text>
+            <Text style={styles.verseHint}>
+              Tap verse numbers to select summary sentences for Compute.
+            </Text>
+            <GuideText
+              text={saved.text}
+              selectionKey={`research:${lens}`}
+              selectedSourceKey={verseSourceKey}
+              selectedNumbers={verseNumbers}
+              onToggleVerse={toggleGuideVerse}
+            />
+          </View>
         ) : (
-          <Text style={styles.primaryBtnText}>
-            {meta.needsText && !hasText
-              ? "Needs PDF/EPUB"
-              : saved
-                ? `Refresh ${meta.label.toLowerCase()}`
-                : `Generate ${meta.label.toLowerCase()}`}
+          <Text style={styles.empty}>
+            Pick a lens. Reedr stays grounded in this reading so you can research with it — not
+            outsource the work.
           </Text>
         )}
-      </Pressable>
+      </ScrollView>
 
-      {saved ? (
-        <View style={styles.card}>
-          <Text style={styles.cardLabel}>{meta.label}</Text>
-          <GuideText text={saved.text} />
-        </View>
-      ) : (
-        <Text style={styles.empty}>
-          Pick a lens. Reedr stays grounded in this reading so you can research with it — not
-          outsource the work.
-        </Text>
-      )}
-    </ScrollView>
+      {verseNumbers.length ? (
+        <OperationKeypad
+          selected={op}
+          onSelect={setOp}
+          onCompute={runVerseCompute}
+          onClear={() => {
+            setVerseSourceKey(null);
+            setVerseNumbers([]);
+            setVersePool([]);
+          }}
+          busy={computeBusy}
+          selectionLabel={`${formatVerseLabel(verseNumbers)} · ${countWords(selectedVerseText)} words`}
+          bottomInset={insets.bottom}
+        />
+      ) : null}
+    </View>
   );
 }
 
@@ -244,5 +340,6 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
     marginBottom: 10,
   },
+  verseHint: { color: colors.muted, fontSize: 12, lineHeight: 17, marginBottom: 10 },
   empty: { color: colors.muted, fontSize: 13, lineHeight: 19, marginTop: 8 },
 });

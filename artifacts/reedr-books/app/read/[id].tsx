@@ -6,7 +6,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -15,13 +14,29 @@ import { BookCover } from "@/components/BookCover";
 import { GuideText } from "@/components/GuideText";
 import { OperationKeypad } from "@/components/OperationKeypad";
 import { TierPicker } from "@/components/TierPicker";
+import { VerseText } from "@/components/VerseText";
 import { computeLetterOp, summarizeText } from "@/lib/api";
 import { getDeviceLanguageCode, languageDisplayName } from "@/lib/language";
 import { countWords, letterOpMeta } from "@/lib/operations";
 import { bookHasFullText } from "@/lib/parseBook";
 import { findSummary, loadBooks, saveSummary, summariesForBook, upsertBook } from "@/lib/storage";
+import {
+  formatVerseLabel,
+  joinVerses,
+  splitIntoVerses,
+  toggleVerseNumber,
+  versesFromNumbers,
+  type Verse,
+} from "@/lib/verses";
 import type { Book, Chapter, ComputeResult, LetterOp, SummaryRecord, SummaryTier } from "@/lib/types";
 import { colors } from "@/theme/colors";
+
+type VersePick = {
+  sourceKey: string;
+  numbers: number[];
+  /** Verses belonging to the active source (for joining text). */
+  pool: Verse[];
+};
 
 export default function ReaderScreen() {
   const { id, chapterId } = useLocalSearchParams<{ id: string; chapterId?: string }>();
@@ -34,9 +49,7 @@ export default function ReaderScreen() {
   const [guideBusy, setGuideBusy] = useState(false);
   const [computeBusy, setComputeBusy] = useState(false);
   const [op, setOp] = useState<LetterOp>("summarize");
-  const [selection, setSelection] = useState({ start: 0, end: 0 });
-  /** Tap-selected paragraph index (mobile-friendly alternative to drag highlight). */
-  const [paraIndex, setParaIndex] = useState<number | null>(null);
+  const [pick, setPick] = useState<VersePick | null>(null);
   const [results, setResults] = useState<ComputeResult[]>([]);
 
   useEffect(() => {
@@ -55,8 +68,7 @@ export default function ReaderScreen() {
         found.chapters[0] ||
         null;
       setChapter(ch);
-      setSelection({ start: 0, end: 0 });
-      setParaIndex(null);
+      setPick(null);
       setResults([]);
       const sums = await summariesForBook(found.id);
       setSummaries(sums);
@@ -68,45 +80,49 @@ export default function ReaderScreen() {
     return book.chapters.findIndex((c) => c.id === chapter.id);
   }, [book, chapter]);
 
-  const paragraphs = useMemo(() => {
-    if (!chapter) return [] as string[];
-    return chapter.text
-      .split(/\n\s*\n/)
-      .map((p) => p.trim())
-      .filter(Boolean);
-  }, [chapter]);
+  const chapterVerses = useMemo(
+    () => (chapter ? splitIntoVerses(chapter.text) : []),
+    [chapter],
+  );
 
   const summary = useMemo(() => {
     if (!chapter) return "";
     return findSummary(summaries, { scope: "chapter", tier, chapterId: chapter.id })?.text || "";
   }, [summaries, chapter, tier]);
 
-  const selectedText = useMemo(() => {
-    if (!chapter) return "";
-    const { start, end } = selection;
-    // Fine-select is scoped to the active paragraph's local offsets.
-    if (paraIndex != null && paragraphs[paraIndex] && end > start) {
-      return paragraphs[paraIndex].slice(start, end).trim();
-    }
-    if (paraIndex != null && paragraphs[paraIndex]) return paragraphs[paraIndex];
-    if (end > start) return chapter.text.slice(start, end).trim();
-    return "";
-  }, [chapter, selection, paraIndex, paragraphs]);
+  const selectedVerses = useMemo(() => {
+    if (!pick?.numbers.length) return [];
+    return versesFromNumbers(pick.pool, pick.numbers);
+  }, [pick]);
 
+  const selectedText = joinVerses(selectedVerses);
   const computeTarget = selectedText || chapter?.text.trim() || "";
   const selectionOnly = Boolean(selectedText);
+
   const selectionLabel = !chapter
     ? "No text"
     : selectionOnly
-      ? `Selection · ${countWords(selectedText)} words`
-      : `Whole chapter · ${countWords(chapter.text)} words`;
+      ? `${formatVerseLabel(pick!.numbers, {
+          chapter: index >= 0 ? index + 1 : undefined,
+        })} · ${countWords(selectedText)} words`
+      : `Whole chapter · ${chapterVerses.length} verses · ${countWords(chapter.text)} words`;
+
+  function toggleFromSource(sourceKey: string, verse: Verse, pool: Verse[]) {
+    setPick((prev) => {
+      if (!prev || prev.sourceKey !== sourceKey) {
+        return { sourceKey, numbers: [verse.n], pool };
+      }
+      const numbers = toggleVerseNumber(prev.numbers, verse.n);
+      if (!numbers.length) return null;
+      return { sourceKey, numbers, pool };
+    });
+  }
 
   async function goChapter(nextIndex: number) {
     if (!book || nextIndex < 0 || nextIndex >= book.chapters.length) return;
     const ch = book.chapters[nextIndex];
     setChapter(ch);
-    setSelection({ start: 0, end: 0 });
-    setParaIndex(null);
+    setPick(null);
     setResults([]);
     const sums = await summariesForBook(book.id);
     setSummaries(sums);
@@ -121,7 +137,7 @@ export default function ReaderScreen() {
     if (input.length < 8) {
       Alert.alert(
         "Not enough letters",
-        "Highlight a phrase or paragraph in the chapter, or leave no selection to compute the whole chapter.",
+        "Tap a verse number in the chapter or summary to select sentences, then Compute.",
       );
       return;
     }
@@ -146,7 +162,7 @@ export default function ReaderScreen() {
       };
       setResults((prev) => [item, ...prev].slice(0, 12));
     } catch (err: any) {
-      Alert.alert("Compute failed", err.message || "Try a clearer selection.");
+      Alert.alert("Compute failed", err.message || "Try another verse.");
     } finally {
       setComputeBusy(false);
     }
@@ -187,7 +203,7 @@ export default function ReaderScreen() {
       <View style={[styles.screen, styles.center, { paddingTop: insets.top + 24 }]}>
         <Text style={styles.emptyTitle}>Reading needs a PDF or EPUB</Text>
         <Text style={styles.emptyBody}>
-          Add a PDF or EPUB to highlight letters and run the operation keypad.
+          Add a PDF or EPUB to read numbered verses and run the operation keypad.
         </Text>
         <Pressable
           style={styles.emptyBtn}
@@ -209,6 +225,8 @@ export default function ReaderScreen() {
       </View>
     );
   }
+
+  const chapterKey = `chapter:${chapter.id}`;
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top + 8 }]}>
@@ -259,53 +277,21 @@ export default function ReaderScreen() {
         </View>
 
         <View style={styles.selectHintBox}>
-          <Text style={styles.selectHintTitle}>Mobile calculator</Text>
+          <Text style={styles.selectHintTitle}>Verse links → Compute</Text>
           <Text style={styles.selectHint}>
-            Tap a paragraph, press a labeled key (e.g. Σ Summarize), then = Compute. Clear resets
-            the selection; Prev/Next change chapter. No selection = whole chapter.
+            Each sentence has a verse number (like Scripture). Tap 1, 2, 3… to select; tap again to
+            deselect. Then use the keypad (= Compute). Works the same in summaries below.
           </Text>
         </View>
 
-        <View style={styles.paraList}>
-          {paragraphs.map((p, i) => {
-            const on = paraIndex === i;
-            return (
-              <Pressable
-                key={i}
-                onPress={() => {
-                  setParaIndex(on ? null : i);
-                  setSelection({ start: 0, end: 0 });
-                }}
-                style={[styles.para, on && styles.paraOn]}
-              >
-                <Text style={[styles.paraText, on && styles.paraTextOn]}>{p}</Text>
-              </Pressable>
-            );
-          })}
-        </View>
-
-        <Text style={styles.dragHint}>
-          Tap a paragraph to select it for Compute. Tap again to clear. With a paragraph selected,
-          drag inside Fine select to narrow to a phrase.
-        </Text>
-
-        {paraIndex != null && paragraphs[paraIndex] ? (
-          <View style={styles.fineBox}>
-            <Text style={styles.fineLabel}>Fine select (drag inside paragraph)</Text>
-            <TextInput
-              style={styles.bodyInput}
-              value={paragraphs[paraIndex]}
-              editable={false}
-              multiline
-              scrollEnabled={false}
-              showSoftInputOnFocus={false}
-              onSelectionChange={(e) => {
-                const { start, end } = e.nativeEvent.selection;
-                setSelection({ start, end });
-              }}
-            />
-          </View>
-        ) : null}
+        <VerseText
+          text={chapter.text}
+          tone="paper"
+          size="body"
+          chapterNumber={index + 1}
+          selectedNumbers={pick?.sourceKey === chapterKey ? pick.numbers : []}
+          onToggleVerse={(v, all) => toggleFromSource(chapterKey, v, all)}
+        />
 
         {results.length ? (
           <View style={styles.resultsBlock}>
@@ -325,7 +311,14 @@ export default function ReaderScreen() {
                 <Text style={styles.resultPreview} numberOfLines={2}>
                   {r.inputPreview}
                 </Text>
-                <GuideText text={r.text} tone="paper" />
+                <GuideText
+                  text={r.text}
+                  tone="paper"
+                  selectionKey={`tape:${r.id}`}
+                  selectedSourceKey={pick?.sourceKey}
+                  selectedNumbers={pick?.numbers}
+                  onToggleVerse={(v, all, key) => toggleFromSource(key, v, all)}
+                />
               </View>
             ))}
           </View>
@@ -335,7 +328,7 @@ export default function ReaderScreen() {
           <Text style={styles.summaryLabel}>Chapter guide</Text>
           <TierPicker value={tier} onChange={setTier} tone="paper" />
           <Text style={styles.tierHint}>
-            Full-chapter General / Detailed — separate from keypad compute. Translated into{" "}
+            Summary sentences are also numbered — tap a verse link to compute on it. Translated into{" "}
             {languageDisplayName(getDeviceLanguageCode())}.
           </Text>
           <Pressable style={styles.inlineGuideBtn} onPress={summarizeChapter} disabled={guideBusy}>
@@ -349,7 +342,14 @@ export default function ReaderScreen() {
           </Pressable>
           {summary ? (
             <View style={styles.summaryCard}>
-              <GuideText text={summary} tone="paper" />
+              <GuideText
+                text={summary}
+                tone="paper"
+                selectionKey="chapter-guide"
+                selectedSourceKey={pick?.sourceKey}
+                selectedNumbers={pick?.numbers}
+                onToggleVerse={(v, all, key) => toggleFromSource(key, v, all)}
+              />
             </View>
           ) : null}
         </View>
@@ -359,10 +359,7 @@ export default function ReaderScreen() {
         selected={op}
         onSelect={setOp}
         onCompute={runCompute}
-        onClear={() => {
-          setParaIndex(null);
-          setSelection({ start: 0, end: 0 });
-        }}
+        onClear={() => setPick(null)}
         onPrev={() => goChapter(index - 1)}
         onNext={() => goChapter(index + 1)}
         canPrev={index > 0}
@@ -450,47 +447,6 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
   },
   selectHint: { color: "#4b5563", fontSize: 13, lineHeight: 18 },
-  paraList: { gap: 10, marginBottom: 8 },
-  para: {
-    borderRadius: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    backgroundColor: "transparent",
-    borderWidth: 1,
-    borderColor: "transparent",
-  },
-  paraOn: {
-    backgroundColor: "rgba(109,95,250,0.12)",
-    borderColor: "rgba(109,95,250,0.45)",
-  },
-  paraText: {
-    color: colors.textOnPaper,
-    fontSize: 18,
-    lineHeight: 30,
-  },
-  paraTextOn: { color: colors.textOnPaper },
-  dragHint: { color: "#6b7280", fontSize: 12, lineHeight: 17, marginBottom: 10 },
-  fineBox: { marginTop: 4, marginBottom: 8 },
-  fineLabel: {
-    color: "#6b7280",
-    fontSize: 11,
-    fontWeight: "700",
-    letterSpacing: 0.5,
-    textTransform: "uppercase",
-    marginBottom: 6,
-  },
-  bodyInput: {
-    color: colors.textOnPaper,
-    fontSize: 16,
-    lineHeight: 26,
-    padding: 12,
-    margin: 0,
-    textAlignVertical: "top",
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.08)",
-  },
   resultsBlock: { marginTop: 28, gap: 10 },
   resultsHeader: {
     flexDirection: "row",

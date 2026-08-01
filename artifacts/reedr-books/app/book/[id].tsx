@@ -9,24 +9,40 @@ import {
   View,
 } from "react-native";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BookCover } from "@/components/BookCover";
 import { GuideText } from "@/components/GuideText";
+import { OperationKeypad } from "@/components/OperationKeypad";
 import { TierPicker } from "@/components/TierPicker";
-import { summarizeText } from "@/lib/api";
+import { computeLetterOp, summarizeText } from "@/lib/api";
 import { findBookCover } from "@/lib/covers";
 import { getDeviceLanguageCode, languageDisplayName } from "@/lib/language";
+import { countWords } from "@/lib/operations";
 import { bookHasFullText, estimateWordCount } from "@/lib/parseBook";
 import { findSummary, loadBooks, saveSummary, summariesForBook, upsertBook } from "@/lib/storage";
-import type { Book, SummaryRecord, SummaryTier } from "@/lib/types";
+import {
+  formatVerseLabel,
+  joinVerses,
+  toggleVerseNumber,
+  versesFromNumbers,
+  type Verse,
+} from "@/lib/verses";
+import type { Book, LetterOp, SummaryRecord, SummaryTier } from "@/lib/types";
 import { colors } from "@/theme/colors";
 
 export default function BookDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [book, setBook] = useState<Book | null>(null);
   const [summaries, setSummaries] = useState<SummaryRecord[]>([]);
   const [tier, setTier] = useState<SummaryTier>("general");
   const [busy, setBusy] = useState(false);
+  const [op, setOp] = useState<LetterOp>("summarize");
+  const [computeBusy, setComputeBusy] = useState(false);
+  const [verseSourceKey, setVerseSourceKey] = useState<string | null>(null);
+  const [verseNumbers, setVerseNumbers] = useState<number[]>([]);
+  const [versePool, setVersePool] = useState<Verse[]>([]);
 
   const refresh = useCallback(async () => {
     const books = await loadBooks();
@@ -62,6 +78,54 @@ export default function BookDetailScreen() {
     () => findSummary(summaries, { scope: "book", tier }),
     [summaries, tier],
   );
+
+  const selectedVerseText = useMemo(
+    () => joinVerses(versesFromNumbers(versePool, verseNumbers)),
+    [versePool, verseNumbers],
+  );
+
+  function toggleGuideVerse(verse: Verse, all: Verse[], key: string) {
+    if (verseSourceKey !== key) {
+      setVerseSourceKey(key);
+      setVerseNumbers([verse.n]);
+      setVersePool(all);
+      return;
+    }
+    const next = toggleVerseNumber(verseNumbers, verse.n);
+    if (!next.length) {
+      setVerseSourceKey(null);
+      setVerseNumbers([]);
+      setVersePool([]);
+      return;
+    }
+    setVerseNumbers(next);
+    setVersePool(all);
+  }
+
+  async function runVerseCompute() {
+    if (!book || !selectedVerseText.trim()) return;
+    setComputeBusy(true);
+    try {
+      const context = book.chapters.map((c) => `# ${c.title}\n${c.text}`).join("\n\n");
+      const reply = await computeLetterOp({
+        title: book.title,
+        author: book.author,
+        op,
+        selection: selectedVerseText,
+        chapterContext: context || book.description || selectedVerseText,
+        sourceLanguage: book.language,
+        outputLanguage: getDeviceLanguageCode(),
+      });
+      Alert.alert(
+        `${op} result`,
+        reply.length > 900 ? `${reply.slice(0, 900)}…` : reply,
+      );
+    } catch (err: any) {
+      Alert.alert("Compute failed", err.message || "Try another verse.");
+    } finally {
+      setComputeBusy(false);
+    }
+  }
 
   async function runBookGuide() {
     if (!book) return;
@@ -120,8 +184,9 @@ export default function BookDetailScreen() {
   }
 
   return (
+    <View style={styles.screen}>
     <FlatList
-      style={styles.screen}
+      style={{ flex: 1 }}
       data={hasText ? book.chapters : []}
       keyExtractor={(item) => item.id}
       ListHeaderComponent={
@@ -216,7 +281,16 @@ export default function BookDetailScreen() {
                 {tier === "detailed" ? "Detailed guide" : "General guide"}
                 {!hasText && tier === "general" ? " · from knowledge" : ""}
               </Text>
-              <GuideText text={bookGuide.text} />
+              <Text style={styles.verseHint}>
+                Tap verse numbers in the summary to select sentences for Compute.
+              </Text>
+              <GuideText
+                text={bookGuide.text}
+                selectionKey="book-guide"
+                selectedSourceKey={verseSourceKey}
+                selectedNumbers={verseNumbers}
+                onToggleVerse={toggleGuideVerse}
+              />
             </View>
           ) : null}
 
@@ -261,6 +335,22 @@ export default function BookDetailScreen() {
         );
       }}
     />
+    {verseNumbers.length ? (
+      <OperationKeypad
+        selected={op}
+        onSelect={setOp}
+        onCompute={runVerseCompute}
+        onClear={() => {
+          setVerseSourceKey(null);
+          setVerseNumbers([]);
+          setVersePool([]);
+        }}
+        busy={computeBusy}
+        selectionLabel={`${formatVerseLabel(verseNumbers)} · ${countWords(selectedVerseText)} words`}
+        bottomInset={insets.bottom}
+      />
+    ) : null}
+    </View>
   );
 }
 
@@ -336,6 +426,12 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     letterSpacing: 0.6,
     textTransform: "uppercase",
+    marginBottom: 10,
+  },
+  verseHint: {
+    color: colors.muted,
+    fontSize: 12,
+    lineHeight: 17,
     marginBottom: 10,
   },
   sectionLabel: {
