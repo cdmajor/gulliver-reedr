@@ -1,8 +1,16 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import type { Book, SummaryRecord, SummaryScope, SummaryTier } from "./types";
+import type {
+  Book,
+  ResearchLens,
+  ResearchRecord,
+  SummaryRecord,
+  SummaryScope,
+  SummaryTier,
+} from "./types";
 
 const BOOKS_KEY = "reedr_books_v1";
 const SUMMARIES_KEY = "reedr_summaries_v1";
+const RESEARCH_KEY = "reedr_research_v1";
 
 function normalizeSummary(raw: SummaryRecord): SummaryRecord {
   return {
@@ -55,6 +63,8 @@ export async function deleteBook(bookId: string): Promise<Book[]> {
   await saveBooks(next);
   const summaries = (await loadSummaries()).filter((s) => s.bookId !== bookId);
   await AsyncStorage.setItem(SUMMARIES_KEY, JSON.stringify(summaries));
+  const research = (await loadResearch()).filter((r) => r.bookId !== bookId);
+  await AsyncStorage.setItem(RESEARCH_KEY, JSON.stringify(research));
   return next;
 }
 
@@ -98,5 +108,40 @@ export function findSummary(
       s.scope === params.scope &&
       s.tier === params.tier &&
       (params.scope === "book" || s.chapterId === params.chapterId),
+  );
+}
+
+export async function loadResearch(): Promise<ResearchRecord[]> {
+  const raw = await AsyncStorage.getItem(RESEARCH_KEY);
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw) as ResearchRecord[];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function researchKey(r: Pick<ResearchRecord, "bookId" | "lens" | "chapterId">): string {
+  return `${r.bookId}|${r.lens}|${r.chapterId || ""}`;
+}
+
+export async function saveResearch(record: ResearchRecord): Promise<void> {
+  const all = await loadResearch();
+  const key = researchKey(record);
+  const next = [record, ...all.filter((r) => researchKey(r) !== key)];
+  await AsyncStorage.setItem(RESEARCH_KEY, JSON.stringify(next.slice(0, 200)));
+}
+
+export async function researchForBook(bookId: string): Promise<ResearchRecord[]> {
+  return (await loadResearch()).filter((r) => r.bookId === bookId);
+}
+
+export function findResearch(
+  records: ResearchRecord[],
+  params: { lens: ResearchLens; chapterId?: string },
+): ResearchRecord | undefined {
+  return records.find(
+    (r) => r.lens === params.lens && (r.chapterId || "") === (params.chapterId || ""),
   );
 }

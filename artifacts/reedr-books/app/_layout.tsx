@@ -22,6 +22,7 @@ export default function RootLayout() {
         <Stack.Screen name="book/[id]" options={{ title: "Book" }} />
         <Stack.Screen name="read/[id]" options={{ title: "Reading", headerShown: false }} />
         <Stack.Screen name="chat/[id]" options={{ title: "Ask Reedr" }} />
+        <Stack.Screen name="research/[id]" options={{ title: "Research aid" }} />
       </Stack>
     </GestureHandlerRootView>
   );

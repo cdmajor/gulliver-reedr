@@ -171,6 +171,9 @@ export default function BookDetailScreen() {
                 <Text style={styles.primaryBtnText}>Read</Text>
               </Pressable>
             ) : null}
+            <Pressable style={styles.ghostBtn} onPress={() => router.push(`/research/${book.id}`)}>
+              <Text style={styles.ghostBtnText}>Research</Text>
+            </Pressable>
             <Pressable style={styles.ghostBtn} onPress={() => router.push(`/chat/${book.id}`)}>
               <Text style={styles.ghostBtnText}>Ask</Text>
             </Pressable>

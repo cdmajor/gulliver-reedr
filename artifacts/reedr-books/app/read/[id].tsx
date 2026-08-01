@@ -147,9 +147,22 @@ export default function ReaderScreen() {
         <Text style={styles.topTitle} numberOfLines={1}>
           {book.title}
         </Text>
-        <Pressable onPress={() => router.push(`/chat/${book.id}`)} hitSlop={12}>
-          <Text style={styles.topLink}>Ask</Text>
-        </Pressable>
+        <View style={styles.topActions}>
+          <Pressable
+            onPress={() =>
+              router.push({
+                pathname: "/research/[id]",
+                params: { id: book.id, chapterId: chapter.id },
+              })
+            }
+            hitSlop={8}
+          >
+            <Text style={styles.topLink}>Research</Text>
+          </Pressable>
+          <Pressable onPress={() => router.push(`/chat/${book.id}`)} hitSlop={8}>
+            <Text style={styles.topLink}>Ask</Text>
+          </Pressable>
+        </View>
       </View>
 
       <ScrollView contentContainerStyle={styles.page} showsVerticalScrollIndicator={false}>
@@ -249,7 +262,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 10,
   },
-  topLink: { color: colors.brand, fontWeight: "700", fontSize: 15, minWidth: 48 },
+  topLink: { color: colors.brand, fontWeight: "700", fontSize: 14, minWidth: 40 },
+  topActions: { flexDirection: "row", gap: 10, alignItems: "center" },
   topTitle: {
     flex: 1,
     textAlign: "center",

@@ -4,7 +4,8 @@ import {
   languageDisplayName,
   translationGuideInstructions,
 } from "./language";
-import type { SummaryScope, SummaryTier } from "./types";
+import { RESEARCH_PROMPTS, researchLensMeta } from "./research";
+import type { ResearchLens, SummaryScope, SummaryTier } from "./types";
 
 const DEFAULT_API = "https://gulliversoftwaretech.com/api";
 
@@ -23,8 +24,11 @@ export async function reedrChat(params: {
   title: string;
   url: string;
   text: string;
+  /** Context char cap — books/research may pass a higher value than page browsing. */
+  maxContextChars?: number;
 }): Promise<string> {
   const api = getApiUrl();
+  const cap = params.maxContextChars ?? 12_000;
   const res = await fetch(`${api}/reedr/chat`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Accept: "application/json" },
@@ -33,7 +37,7 @@ export async function reedrChat(params: {
       pageContext: {
         title: params.title,
         url: params.url,
-        text: params.text.slice(0, 12000),
+        text: params.text.slice(0, cap),
       },
     }),
   });
@@ -238,6 +242,79 @@ export async function summarizeText(params: {
     title: params.title,
     url: `reedr-books://${params.scope}/${params.tier}/${encodeURIComponent(params.title)}`,
     text: params.text,
+    maxContextChars: 48_000,
+  });
+}
+
+/**
+ * Research aid grounded in the book (or light orientation without a file
+ * for lenses that allow it). Never writes papers — maps the reading.
+ */
+export async function generateResearchAid(params: {
+  title: string;
+  author?: string;
+  text: string;
+  lens: ResearchLens;
+  description?: string;
+  sourceLanguage?: string;
+  outputLanguage?: string;
+  chapterTitle?: string;
+}): Promise<string> {
+  const meta = researchLensMeta(params.lens);
+  const hasText = params.text.trim().length > 80;
+  const outputLanguage = params.outputLanguage || getDeviceLanguageCode();
+  const langBlock = translationGuideInstructions({
+    outputLanguage,
+    sourceLanguage: params.sourceLanguage,
+  });
+  const authorLine = params.author ? `\nAuthor: ${params.author}` : "";
+  const chapterLine = params.chapterTitle ? `\nFocus chapter: ${params.chapterTitle}` : "";
+  const prompt = RESEARCH_PROMPTS[params.lens];
+
+  if (!hasText && meta.needsText) {
+    throw new Error(
+      "This research lens needs the book text. Add a PDF or EPUB to map claims and evidence from the source.",
+    );
+  }
+
+  if (!hasText) {
+    const blurb = params.description ? `\nCatalog blurb: ${params.description}` : "";
+    return reedrChat({
+      messages: [
+        {
+          role: "user",
+          content: `${prompt}${langBlock}${authorLine}${blurb}
+
+Title: ${params.title}
+
+No manuscript is attached. Produce a light RESEARCH ORIENTATION from established knowledge only.
+Label uncertain items. Do not invent quotations or page numbers.
+Write in ${languageDisplayName(outputLanguage)}.`,
+        },
+      ],
+      title: params.title,
+      url: `reedr-books://research/${params.lens}/knowledge/${encodeURIComponent(params.title)}`,
+      text: `${params.title} by ${params.author || "Unknown"}. ${params.description || ""}`.slice(
+        0,
+        4000,
+      ),
+    });
+  }
+
+  return reedrChat({
+    messages: [
+      {
+        role: "user",
+        content: `${prompt}${langBlock}${authorLine}${chapterLine}
+
+Work only from the book text in context. Translate research notes into ${languageDisplayName(outputLanguage)} when the source is in another language.
+Do not write a paper — produce research aid notes for the reader.`,
+      },
+    ],
+    title: params.title,
+    url: `reedr-books://research/${params.lens}/${encodeURIComponent(params.title)}`,
+    text: params.text,
+    maxContextChars: 48_000,
   });
 }
 

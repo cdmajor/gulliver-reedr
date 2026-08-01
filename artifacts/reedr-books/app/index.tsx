@@ -51,7 +51,7 @@ export default function LibraryScreen() {
     <View style={styles.screen}>
       <View style={styles.top}>
         <Text style={styles.brand}>Reedr Books</Text>
-        <Text style={styles.tagline}>Search. Guide. Read deeper.</Text>
+        <Text style={styles.tagline}>Search. Guide. Research. Read deeper.</Text>
         <Link href="/search" asChild>
           <Pressable style={styles.primaryBtn}>
             <Text style={styles.primaryBtnText}>Search books</Text>
@@ -80,8 +80,8 @@ export default function LibraryScreen() {
           contentContainerStyle={styles.list}
           ListEmptyComponent={
             <Text style={styles.empty}>
-              Search any book for a General guide. Add a PDF or EPUB when you want Detailed
-              guides with text evidence.
+              Search any book for a General guide. Add a PDF or EPUB for Detailed guides and
+              research aid (claims, concepts, reading notes) grounded in the text.
             </Text>
           }
           renderItem={({ item }) => {

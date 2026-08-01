@@ -3,6 +3,14 @@ export type BookFormat = "txt" | "paste" | "sample" | "catalog" | "pdf" | "epub"
 export type SummaryScope = "chapter" | "book";
 export type SummaryTier = "general" | "detailed";
 
+/** Text-grounded research lenses — companion to reading, not a paper writer. */
+export type ResearchLens =
+  | "claims_evidence"
+  | "key_concepts"
+  | "research_questions"
+  | "source_map"
+  | "reading_notes";
+
 /** How Reedr obtained (or failed to obtain) the manuscript text. */
 export type TextAvailability = "full" | "none" | "public_domain";
 
@@ -40,6 +48,15 @@ export type SummaryRecord = {
   chapterId?: string;
   scope: SummaryScope;
   tier: SummaryTier;
+  text: string;
+  createdAt: number;
+};
+
+export type ResearchRecord = {
+  id: string;
+  bookId: string;
+  chapterId?: string;
+  lens: ResearchLens;
   text: string;
   createdAt: number;
 };
