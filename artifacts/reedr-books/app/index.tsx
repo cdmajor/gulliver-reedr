@@ -41,26 +41,24 @@ export default function LibraryScreen() {
     const book = createSampleBook();
     const next = await upsertBook(book);
     setBooks(next);
+    router.push(`/book/${book.id}`);
   }
 
   return (
     <View style={styles.screen}>
-      <View style={styles.hero}>
-        <Text style={styles.kicker}>Reedr Books</Text>
-        <Text style={styles.headline}>Long work, made legible.</Text>
-        <Text style={styles.sub}>
-          Import a manuscript or book-length text. Reedr reads with you, summarizes chapters, and keeps the thread.
-        </Text>
-        <View style={styles.actions}>
-          <Link href="/import" asChild>
-            <Pressable style={styles.primaryBtn}>
-              <Text style={styles.primaryBtnText}>Add a book</Text>
-            </Pressable>
-          </Link>
-          <Pressable style={styles.ghostBtn} onPress={addSample}>
-            <Text style={styles.ghostBtnText}>Try sample</Text>
+      <View style={styles.top}>
+        <Text style={styles.brand}>Reedr Books</Text>
+        <Text style={styles.tagline}>Read. Summarize. Understand.</Text>
+        <Link href="/import" asChild>
+          <Pressable style={styles.primaryBtn}>
+            <Text style={styles.primaryBtnText}>Add a book</Text>
           </Pressable>
-        </View>
+        </Link>
+        {!books.length && !loading ? (
+          <Pressable onPress={addSample}>
+            <Text style={styles.sampleLink}>Or try a short sample</Text>
+          </Pressable>
+        ) : null}
       </View>
 
       {loading ? (
@@ -70,14 +68,9 @@ export default function LibraryScreen() {
           data={books}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.list}
-          ListHeaderComponent={
-            <Text style={styles.sectionLabel}>
-              {books.length ? "Your library" : "Your library is empty"}
-            </Text>
-          }
           ListEmptyComponent={
             <Text style={styles.empty}>
-              Add a .txt manuscript, paste chapters, or load the sample to see Reedr summarize book-length work.
+              Add a text file or paste a manuscript. Reedr can guide the whole book or any chapter.
             </Text>
           }
           renderItem={({ item }) => (
@@ -94,7 +87,7 @@ export default function LibraryScreen() {
                 <Text style={styles.bookTitle}>{item.title}</Text>
                 <Text style={styles.bookAuthor}>{item.author}</Text>
                 <Text style={styles.bookStats}>
-                  {item.chapters.length} chapters · ~{estimateWordCount(item).toLocaleString()} words
+                  {item.chapters.length} chapters · ~{Math.round(estimateWordCount(item) / 1000)}k words
                 </Text>
               </View>
             </Pressable>
@@ -107,55 +100,35 @@ export default function LibraryScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.ink },
-  hero: {
+  top: {
     paddingHorizontal: 20,
-    paddingTop: 8,
-    paddingBottom: 18,
+    paddingTop: 12,
+    paddingBottom: 16,
+    gap: 8,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.line,
-    backgroundColor: colors.inkSoft,
   },
-  kicker: {
-    color: colors.brandSoft,
-    fontSize: 12,
-    fontWeight: "800",
-    letterSpacing: 1.4,
-    textTransform: "uppercase",
-    marginBottom: 8,
-  },
-  headline: {
+  brand: {
     color: colors.text,
     fontSize: 28,
     fontWeight: "800",
-    letterSpacing: -0.5,
-    marginBottom: 8,
+    letterSpacing: -0.4,
   },
-  sub: { color: colors.muted, fontSize: 15, lineHeight: 22, marginBottom: 16 },
-  actions: { flexDirection: "row", gap: 10 },
+  tagline: { color: colors.muted, fontSize: 15, marginBottom: 4 },
   primaryBtn: {
     backgroundColor: colors.brand,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 14,
     borderRadius: 12,
+    alignItems: "center",
   },
-  primaryBtnText: { color: "#fff", fontWeight: "700", fontSize: 15 },
-  ghostBtn: {
-    borderWidth: 1,
-    borderColor: colors.line,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 12,
+  primaryBtnText: { color: "#fff", fontWeight: "700", fontSize: 16 },
+  sampleLink: {
+    color: colors.brandSoft,
+    textAlign: "center",
+    fontWeight: "600",
+    marginTop: 4,
   },
-  ghostBtnText: { color: colors.text, fontWeight: "600", fontSize: 15 },
-  list: { padding: 20, paddingBottom: 40, gap: 14 },
-  sectionLabel: {
-    color: colors.muted,
-    fontSize: 12,
-    fontWeight: "700",
-    letterSpacing: 0.8,
-    textTransform: "uppercase",
-    marginBottom: 10,
-  },
+  list: { padding: 20, paddingBottom: 40 },
   empty: { color: colors.muted, lineHeight: 21, fontSize: 14 },
   row: {
     flexDirection: "row",
@@ -170,5 +143,5 @@ const styles = StyleSheet.create({
   meta: { flex: 1, justifyContent: "center", gap: 4 },
   bookTitle: { color: colors.text, fontSize: 17, fontWeight: "700" },
   bookAuthor: { color: colors.muted, fontSize: 13 },
-  bookStats: { color: colors.muted, fontSize: 12, marginTop: 4 },
+  bookStats: { color: colors.muted, fontSize: 12, marginTop: 2 },
 });

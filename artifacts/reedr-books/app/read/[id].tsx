@@ -10,9 +10,10 @@ import {
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { GuideText } from "@/components/GuideText";
 import { summarizeText } from "@/lib/api";
-import { loadBooks, saveSummary, upsertBook } from "@/lib/storage";
-import type { Book, Chapter } from "@/lib/types";
+import { loadBooks, saveSummary, summariesForBook, upsertBook } from "@/lib/storage";
+import type { Book, Chapter, SummaryRecord } from "@/lib/types";
 import { colors } from "@/theme/colors";
 
 export default function ReaderScreen() {
@@ -36,6 +37,11 @@ export default function ReaderScreen() {
         found.chapters[0] ||
         null;
       setChapter(ch);
+      if (ch) {
+        const sums = await summariesForBook(found.id);
+        const existing = sums.find((s) => s.scope === "chapter" && s.chapterId === ch.id);
+        setSummary(existing?.text || "");
+      }
     })();
   }, [id, chapterId]);
 
@@ -48,7 +54,9 @@ export default function ReaderScreen() {
     if (!book || nextIndex < 0 || nextIndex >= book.chapters.length) return;
     const ch = book.chapters[nextIndex];
     setChapter(ch);
-    setSummary("");
+    const sums = await summariesForBook(book.id);
+    const existing = sums.find((s: SummaryRecord) => s.scope === "chapter" && s.chapterId === ch.id);
+    setSummary(existing?.text || "");
     const next = { ...book, lastChapterId: ch.id, updatedAt: Date.now() };
     setBook(next);
     await upsertBook(next);
@@ -60,6 +68,7 @@ export default function ReaderScreen() {
     try {
       const reply = await summarizeText({
         title: `${book.title} — ${chapter.title}`,
+        author: book.author,
         text: chapter.text,
         scope: "chapter",
       });
@@ -73,7 +82,7 @@ export default function ReaderScreen() {
         createdAt: Date.now(),
       });
     } catch (err: any) {
-      Alert.alert("Summary failed", err.message || "Try again in a moment.");
+      Alert.alert("Chapter guide failed", err.message || "Try again in a moment.");
     } finally {
       setBusy(false);
     }
@@ -91,10 +100,10 @@ export default function ReaderScreen() {
     <View style={[styles.screen, { paddingTop: insets.top + 8 }]}>
       <View style={styles.topBar}>
         <Pressable onPress={() => router.back()} hitSlop={12}>
-          <Text style={styles.topLink}>Close</Text>
+          <Text style={styles.topLink}>Back</Text>
         </Pressable>
         <Text style={styles.topTitle} numberOfLines={1}>
-          Reedr · {book.title}
+          {book.title}
         </Text>
         <Pressable onPress={() => router.push(`/chat/${book.id}`)} hitSlop={12}>
           <Text style={styles.topLink}>Ask</Text>
@@ -110,8 +119,8 @@ export default function ReaderScreen() {
 
         {summary ? (
           <View style={styles.summaryCard}>
-            <Text style={styles.summaryLabel}>Reedr summary</Text>
-            <Text style={styles.summaryText}>{summary}</Text>
+            <Text style={styles.summaryLabel}>Chapter guide</Text>
+            <GuideText text={summary} tone="paper" />
           </View>
         ) : null}
       </ScrollView>
@@ -128,7 +137,9 @@ export default function ReaderScreen() {
           {busy ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={styles.summarizeText}>Summarize</Text>
+            <Text style={styles.summarizeText}>
+              {summary ? "Refresh guide" : "Chapter guide"}
+            </Text>
           )}
         </Pressable>
         <Pressable
@@ -164,7 +175,7 @@ const styles = StyleSheet.create({
   },
   page: { paddingHorizontal: 22, paddingBottom: 40 },
   chapterLabel: {
-    color: colors.muted,
+    color: "#6b7280",
     fontSize: 12,
     fontWeight: "700",
     letterSpacing: 0.6,
@@ -182,7 +193,6 @@ const styles = StyleSheet.create({
     color: colors.textOnPaper,
     fontSize: 18,
     lineHeight: 30,
-    fontWeight: "400",
   },
   summaryCard: {
     marginTop: 28,
@@ -198,9 +208,8 @@ const styles = StyleSheet.create({
     fontSize: 12,
     letterSpacing: 0.8,
     textTransform: "uppercase",
-    marginBottom: 8,
+    marginBottom: 10,
   },
-  summaryText: { color: colors.textOnPaper, lineHeight: 22, fontSize: 15 },
   bottomBar: {
     flexDirection: "row",
     gap: 10,
@@ -222,11 +231,11 @@ const styles = StyleSheet.create({
   navDisabled: { opacity: 0.4 },
   navText: { color: colors.textOnPaper, fontWeight: "700" },
   summarizeBtn: {
-    flex: 1.4,
+    flex: 1.6,
     backgroundColor: colors.brand,
     borderRadius: 12,
     paddingVertical: 12,
     alignItems: "center",
   },
-  summarizeText: { color: "#fff", fontWeight: "800" },
+  summarizeText: { color: "#fff", fontWeight: "800", fontSize: 13 },
 });

@@ -41,18 +41,66 @@ export async function reedrChat(params: {
   return data.reply || data.content || data.message || "";
 }
 
+const BOOK_GUIDE_PROMPT = `You are Reedr Books. Write a clear reading guide for this entire book using exactly these markdown headings (keep each section concise):
+
+## Overview
+Premise / plot or argument in plain language.
+
+## Characters
+Key people (or voices/figures in nonfiction): who they are, what they want, how they change. If nonfiction, name central figures instead.
+
+## Themes
+Main themes and ideas, with brief evidence from the text.
+
+## Cultural & academic context
+Historical setting, literary or scholarly traditions, influences, and useful background a curious reader would want.
+
+## Author
+Who the author is (from the text and well-established public knowledge), why they wrote this kind of work, and what that adds to reading it. If author details are thin in the text, say so briefly and give careful public-context notes.
+
+## Takeaway
+What to remember after finishing.
+
+Use short paragraphs or bullets. No fluff. If something is uncertain, say so.`;
+
+const CHAPTER_GUIDE_PROMPT = `You are Reedr Books. Write a chapter guide using exactly these markdown headings:
+
+## Chapter summary
+What happens or is argued in this chapter.
+
+## Characters in focus
+Who matters here and what we learn about them (or key figures in nonfiction).
+
+## Themes
+Ideas this chapter advances or complicates.
+
+## Context & references
+Cultural, historical, or academic references, allusions, or background that help this chapter land.
+
+## Authorial move
+What the author is doing in this chapter (technique, argument step, tone).
+
+## Why it matters
+How this chapter connects to the whole book.
+
+Keep it scannable. Short paragraphs or bullets.`;
+
 export async function summarizeText(params: {
   title: string;
+  author?: string;
   text: string;
   scope: "chapter" | "book";
 }): Promise<string> {
-  const prompt =
-    params.scope === "book"
-      ? "Summarize this book in clear sections: premise, key arguments or plot, major themes, and a short takeaway. Keep it under 400 words."
-      : "Summarize this chapter in a few short paragraphs: what happens or is argued, why it matters, and what to watch for next. Keep it under 220 words.";
+  const authorLine = params.author ? `\nAuthor (as listed in the app): ${params.author}` : "";
+  const prompt = params.scope === "book" ? BOOK_GUIDE_PROMPT : CHAPTER_GUIDE_PROMPT;
 
   return reedrChat({
-    messages: [{ role: "user", content: prompt }],
+    messages: [
+      {
+        role: "user",
+        content: `${prompt}${authorLine}\n\nWork with the book text provided in context.`,
+      },
+    ],
     title: params.title,
     url: `reedr-books://${params.scope}/${encodeURIComponent(params.title)}`,
     text: params.text,

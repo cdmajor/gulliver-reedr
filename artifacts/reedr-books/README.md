@@ -2,12 +2,23 @@
 
 Apple App Store app for reading and summarizing **books and book-length work**. Same Reedr voice as the Chrome extension; built for long-form instead of web pages.
 
+## Do you need Replit?
+
+**No.** Replit is optional (handy for agents / previews). App Store shipping is:
+
+1. This Expo project on your Mac  
+2. Expo EAS build → `.ipa`  
+3. App Store Connect submit  
+
+You do **not** need to publish Reedr Books on Replit for Apple review.
+
 ## What it does
 
 - **Library** — store manuscripts locally on device
 - **Import** — `.txt` files or pasted text (auto chapter split)
 - **Reader** — chapter navigation on a paper reading surface
-- **Summarize** — chapter or whole-book summaries via Reedr API
+- **Whole-book guide** — overview, characters, themes, cultural/academic context, author background
+- **Chapter guide** — chapter summary, characters in focus, themes, references, authorial move
 - **Ask Reedr** — chat grounded in the book text
 
 ## Stack
