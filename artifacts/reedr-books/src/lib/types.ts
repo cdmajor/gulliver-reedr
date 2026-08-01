@@ -11,6 +11,25 @@ export type ResearchLens =
   | "source_map"
   | "reading_notes";
 
+/** Calculator keypad operation on a text selection. */
+export type LetterOp =
+  | "summarize"
+  | "define"
+  | "evidence"
+  | "translate"
+  | "compare"
+  | "question";
+
+export type ComputeResult = {
+  id: string;
+  op: LetterOp;
+  /** Span that was computed (selection or chapter). */
+  inputPreview: string;
+  selectionOnly: boolean;
+  text: string;
+  createdAt: number;
+};
+
 /** How Reedr obtained (or failed to obtain) the manuscript text. */
 export type TextAvailability = "full" | "none" | "public_domain";
 

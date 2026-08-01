@@ -51,7 +51,7 @@ export default function LibraryScreen() {
     <View style={styles.screen}>
       <View style={styles.top}>
         <Text style={styles.brand}>Reedr Books</Text>
-        <Text style={styles.tagline}>Search. Guide. Research. Read deeper.</Text>
+        <Text style={styles.tagline}>The calculator for letters.</Text>
         <Link href="/search" asChild>
           <Pressable style={styles.primaryBtn}>
             <Text style={styles.primaryBtnText}>Search books</Text>

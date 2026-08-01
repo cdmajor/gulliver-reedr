@@ -4,8 +4,9 @@ import {
   languageDisplayName,
   translationGuideInstructions,
 } from "./language";
+import { OP_PROMPTS, letterOpMeta } from "./operations";
 import { RESEARCH_PROMPTS, researchLensMeta } from "./research";
-import type { ResearchLens, SummaryScope, SummaryTier } from "./types";
+import type { LetterOp, ResearchLens, SummaryScope, SummaryTier } from "./types";
 
 const DEFAULT_API = "https://gulliversoftwaretech.com/api";
 
@@ -243,6 +244,67 @@ export async function summarizeText(params: {
     url: `reedr-books://${params.scope}/${params.tier}/${encodeURIComponent(params.title)}`,
     text: params.text,
     maxContextChars: 48_000,
+  });
+}
+
+/**
+ * Run one calculator operation on a selection (or whole chapter).
+ * Selection is the primary input; chapterContext helps Compare / grounding.
+ */
+export async function computeLetterOp(params: {
+  title: string;
+  author?: string;
+  op: LetterOp;
+  selection: string;
+  chapterContext?: string;
+  sourceLanguage?: string;
+  outputLanguage?: string;
+}): Promise<string> {
+  const selection = params.selection.trim();
+  if (selection.length < 8) {
+    throw new Error("Not enough letters selected. Highlight a phrase or paragraph, then compute.");
+  }
+
+  const outputLanguage = params.outputLanguage || getDeviceLanguageCode();
+  const langBlock = translationGuideInstructions({
+    outputLanguage,
+    sourceLanguage: params.sourceLanguage,
+  });
+  const meta = letterOpMeta(params.op);
+  const authorLine = params.author ? `\nAuthor: ${params.author}` : "";
+  const prompt = OP_PROMPTS[params.op];
+
+  const contextParts = [
+    `SELECTION (compute on this):\n"""\n${selection.slice(0, 12_000)}\n"""`,
+  ];
+  if (params.op === "compare" && params.chapterContext?.trim()) {
+    contextParts.push(
+      `CHAPTER CONTEXT (for comparison only):\n"""\n${params.chapterContext.slice(0, 20_000)}\n"""`,
+    );
+  } else if (params.chapterContext?.trim() && params.chapterContext.trim() !== selection) {
+    // Light surrounding context for grounding — still operate on selection
+    contextParts.push(
+      `Surrounding chapter (background only; operate on the selection):\n"""\n${params.chapterContext.slice(0, 8_000)}\n"""`,
+    );
+  }
+
+  return reedrChat({
+    messages: [
+      {
+        role: "user",
+        content: `${prompt}${langBlock}${authorLine}
+
+Operation key: ${meta.label}
+Write the result in ${languageDisplayName(outputLanguage)}.
+For Translate, the Translation section must be in ${languageDisplayName(outputLanguage)}.
+
+${contextParts.join("\n\n")}`,
+      },
+    ],
+    title: params.title,
+    url: `reedr-books://compute/${params.op}/${encodeURIComponent(params.title)}`,
+    text: selection,
+    maxContextChars: 24_000,
   });
 }
 
