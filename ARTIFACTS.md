@@ -1,15 +1,14 @@
-# Reedr browser packages (Replit artifacts)
+# Reedr packages (Replit artifacts)
 
-This repo ships **two separate Replit-discoverable artifacts** so Chrome and Safari can be downloaded independently:
+| Artifact | Folder | Replit id | Platform |
+|----------|--------|-----------|----------|
+| Reedr for Chrome | `artifacts/reedr-chrome/` | `artifacts/reedr-chrome` | Browser extension |
+| Reedr for Safari | `artifacts/reedr-safari/` | `artifacts/reedr-safari` | Browser extension |
+| Reedr Books | `artifacts/reedr-books/` | `artifacts/reedr-books` | iOS (Expo → App Store) |
 
-| Artifact | Folder | Replit id |
-|----------|--------|-----------|
-| Reedr for Chrome | `artifacts/reedr-chrome/` | `artifacts/reedr-chrome` |
-| Reedr for Safari | `artifacts/reedr-safari/` | `artifacts/reedr-safari` |
+Root `.replit` registers each via `[[artifacts]]`. Each package has its own `.replit-artifact/artifact.toml`.
 
-Root `.replit` registers both via `[[artifacts]]`. Each package has its own `.replit-artifact/artifact.toml`.
-
-## Download
+## Browser extensions
 
 - Chrome zip: `artifacts/reedr-chrome/public/reedr-for-chrome.zip`
 - Safari zip: `artifacts/reedr-safari/public/reedr-for-safari.zip`
@@ -18,3 +17,13 @@ Root `.replit` registers both via `[[artifacts]]`. Each package has its own `.re
 ```bash
 npm run pack:browsers
 ```
+
+## Reedr Books (iOS)
+
+```bash
+cd artifacts/reedr-books
+npm install
+npx expo start
+```
+
+App Store builds use EAS — see `artifacts/reedr-books/README.md`.

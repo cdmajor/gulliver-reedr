@@ -1,0 +1,14 @@
+kind = "mobile"
+title = "Reedr Books"
+version = "1.0.0"
+id = "artifacts/reedr-books"
+
+[[services]]
+name = "mobile"
+localPort = 8081
+
+[services.development]
+run = "bash -c 'cd /home/runner/workspace/artifacts/reedr-books && npm install && npx expo start --tunnel'"
+
+[services.env]
+EXPO_PUBLIC_REEDR_API_URL = "https://gulliversoftwaretech.com/api"

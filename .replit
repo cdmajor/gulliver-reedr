@@ -6,6 +6,9 @@ id = "artifacts/reedr-chrome"
 [[artifacts]]
 id = "artifacts/reedr-safari"
 
+[[artifacts]]
+id = "artifacts/reedr-books"
+
 [deployment]
 deploymentTarget = "autoscale"
 build = ["bash", "scripts/build-all.sh"]

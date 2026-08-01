@@ -1,0 +1,53 @@
+{
+  "expo": {
+    "name": "Reedr Books",
+    "slug": "reedr-books",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "reedrbooks",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#12151c"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.gulliversoftware.reedrbooks",
+      "buildNumber": "1",
+      "infoPlist": {
+        "CFBundleDisplayName": "Reedr Books",
+        "LSDescription": "Reedr Books reads and summarizes books and long-form writing with AI.",
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#12151c"
+      },
+      "package": "com.gulliversoftware.reedrbooks"
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "replace-with-eas-project-id"
+      },
+      "reedrApiUrl": "https://gulliversoftwaretech.com/api"
+    },
+    "owner": "gulliversoftware"
+  }
+}
