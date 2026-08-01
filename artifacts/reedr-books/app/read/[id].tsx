@@ -259,20 +259,11 @@ export default function ReaderScreen() {
         </View>
 
         <View style={styles.selectHintBox}>
-          <Text style={styles.selectHintTitle}>Calculator for letters</Text>
+          <Text style={styles.selectHintTitle}>Mobile calculator</Text>
           <Text style={styles.selectHint}>
-            Tap a paragraph or drag-highlight letters, pick an operation, tap Compute. Nothing
-            selected = whole chapter.
+            Tap a paragraph (input), press a symbol key (Σ ≡ ∵ 文 ≈ ?), then = to compute. C clears.
+            ◀ ▶ change chapter. No selection = whole chapter.
           </Text>
-          {paraIndex != null ? (
-            <Pressable
-              onPress={() => setParaIndex(null)}
-              hitSlop={8}
-              style={{ alignSelf: "flex-start", marginTop: 4 }}
-            >
-              <Text style={styles.clearSel}>Clear paragraph selection</Text>
-            </Pressable>
-          ) : null}
         </View>
 
         <View style={styles.paraList}>
@@ -327,7 +318,7 @@ export default function ReaderScreen() {
             {results.map((r) => (
               <View key={r.id} style={styles.resultCard}>
                 <Text style={styles.resultOp}>
-                  {letterOpMeta(r.op).label}
+                  {letterOpMeta(r.op).symbol} {letterOpMeta(r.op).label}
                   {" · "}
                   {r.selectionOnly ? "selection" : "chapter"}
                 </Text>
@@ -368,26 +359,18 @@ export default function ReaderScreen() {
         selected={op}
         onSelect={setOp}
         onCompute={runCompute}
+        onClear={() => {
+          setParaIndex(null);
+          setSelection({ start: 0, end: 0 });
+        }}
+        onPrev={() => goChapter(index - 1)}
+        onNext={() => goChapter(index + 1)}
+        canPrev={index > 0}
+        canNext={index < book.chapters.length - 1}
         busy={computeBusy}
         selectionLabel={selectionLabel}
+        bottomInset={insets.bottom}
       />
-
-      <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom, 10) }]}>
-        <Pressable
-          style={[styles.navBtn, index <= 0 && styles.navDisabled]}
-          disabled={index <= 0}
-          onPress={() => goChapter(index - 1)}
-        >
-          <Text style={styles.navText}>Prev</Text>
-        </Pressable>
-        <Pressable
-          style={[styles.navBtn, index >= book.chapters.length - 1 && styles.navDisabled]}
-          disabled={index >= book.chapters.length - 1}
-          onPress={() => goChapter(index + 1)}
-        >
-          <Text style={styles.navText}>Next</Text>
-        </Pressable>
-      </View>
     </View>
   );
 }
@@ -467,7 +450,6 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
   },
   selectHint: { color: "#4b5563", fontSize: 13, lineHeight: 18 },
-  clearSel: { color: colors.brand, fontWeight: "700", fontSize: 12 },
   paraList: { gap: 10, marginBottom: 8 },
   para: {
     borderRadius: 10,
@@ -555,22 +537,4 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   inlineGuideText: { color: "#fff", fontWeight: "800", fontSize: 13 },
-  bottomBar: {
-    flexDirection: "row",
-    gap: 10,
-    paddingHorizontal: 12,
-    paddingTop: 8,
-    backgroundColor: "#efebe3",
-  },
-  navBtn: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.12)",
-    borderRadius: 12,
-    paddingVertical: 10,
-    alignItems: "center",
-    backgroundColor: "#fff",
-  },
-  navDisabled: { opacity: 0.4 },
-  navText: { color: colors.textOnPaper, fontWeight: "700" },
 });

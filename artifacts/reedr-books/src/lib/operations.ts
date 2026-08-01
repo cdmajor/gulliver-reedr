@@ -10,15 +10,16 @@ export type { LetterOp };
 export const LETTER_OPS: {
   id: LetterOp;
   label: string;
-  short: string;
+  /** Calculator key glyph shown on the mobile keypad. */
+  symbol: string;
   blurb: string;
 }[] = [
-  { id: "summarize", label: "Summarize", short: "Sum", blurb: "Restate the sense of this span." },
-  { id: "define", label: "Define", short: "Def", blurb: "Terms and meanings in context." },
-  { id: "evidence", label: "Evidence", short: "Evd", blurb: "What this passage claims and supports." },
-  { id: "translate", label: "Translate", short: "Trn", blurb: "Into your language, faithfully." },
-  { id: "compare", label: "Compare", short: "Cmp", blurb: "How this span relates to the chapter." },
-  { id: "question", label: "Question", short: "Q?", blurb: "Sharp questions this span raises." },
+  { id: "summarize", label: "Summarize", symbol: "Σ", blurb: "Restate the sense of this span." },
+  { id: "define", label: "Define", symbol: "≡", blurb: "Terms and meanings in context." },
+  { id: "evidence", label: "Evidence", symbol: "∵", blurb: "What this passage claims and supports." },
+  { id: "translate", label: "Translate", symbol: "文", blurb: "Into your language, faithfully." },
+  { id: "compare", label: "Compare", symbol: "≈", blurb: "How this span relates to the chapter." },
+  { id: "question", label: "Question", symbol: "?", blurb: "Sharp questions this span raises." },
 ];
 
 export function letterOpMeta(op: LetterOp) {

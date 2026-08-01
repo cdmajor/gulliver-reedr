@@ -19,7 +19,7 @@ You do **not** need to publish Reedr Books on Replit for Apple review.
 - **Detailed guides** — require a **PDF or EPUB** (or free public-domain text when available)
 - **Translation** — foreign-language books are summarized/chatted in the device language; Detailed keeps short original quotes with translations
 - **Research aid** — text-grounded lenses: claims & evidence, key concepts, research questions, source map, reading notes (not a paper writer)
-- **Operation keypad** — calculator for letters: highlight a span → Summarize / Define / Evidence / Translate / Compare / Question → Compute
+- **Mobile calculator keypad** — docked chassis with LCD + symbol keys (Σ ≡ ∵ 文 ≈ ?) and `=` compute; tap paragraph or fine-select, `C` clears, `◀▶` chapters
 - **Import** — PDF, EPUB, `.txt`, or paste; attach text to a searched book
 - **Reader** — chapter navigation when text is available
 - **Ask Reedr** — chat grounded in the book text when attached; otherwise general knowledge
