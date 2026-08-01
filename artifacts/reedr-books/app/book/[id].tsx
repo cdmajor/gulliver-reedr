@@ -14,6 +14,7 @@ import { GuideText } from "@/components/GuideText";
 import { TierPicker } from "@/components/TierPicker";
 import { summarizeText } from "@/lib/api";
 import { findBookCover } from "@/lib/covers";
+import { getDeviceLanguageCode, languageDisplayName } from "@/lib/language";
 import { bookHasFullText, estimateWordCount } from "@/lib/parseBook";
 import { findSummary, loadBooks, saveSummary, summariesForBook, upsertBook } from "@/lib/storage";
 import type { Book, SummaryRecord, SummaryTier } from "@/lib/types";
@@ -91,6 +92,8 @@ export default function BookDetailScreen() {
         tier,
         allowKnowledge: true,
         description: book.description,
+        sourceLanguage: book.language,
+        outputLanguage: getDeviceLanguageCode(),
       });
       await saveSummary({
         id: `sum_${Date.now()}`,
@@ -182,7 +185,8 @@ export default function BookDetailScreen() {
                 : "General uses established knowledge of this work — no file required."
               : hasText
                 ? "Detailed includes concrete text evidence from your file."
-                : "Detailed is locked until you add a PDF or EPUB of the book."}
+                : "Detailed is locked until you add a PDF or EPUB of the book."}{" "}
+            Foreign-language books are translated into {languageDisplayName(getDeviceLanguageCode())}.
           </Text>
 
           <Pressable

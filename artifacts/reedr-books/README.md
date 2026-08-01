@@ -17,6 +17,7 @@ You do **not** need to publish Reedr Books on Replit for Apple review.
 - **Search** — find novels, nonfiction, textbooks via Open Library + Google Books (real covers)
 - **General guides** — work without the user’s file (knowledge-based for in-copyright titles)
 - **Detailed guides** — require a **PDF or EPUB** (or free public-domain text when available)
+- **Translation** — foreign-language books are summarized/chatted in the device language; Detailed keeps short original quotes with translations
 - **Import** — PDF, EPUB, `.txt`, or paste; attach text to a searched book
 - **Reader** — chapter navigation when text is available
 - **Ask Reedr** — chat grounded in the book text when attached; otherwise general knowledge

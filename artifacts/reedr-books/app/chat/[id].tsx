@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import { reedrChat, type ChatMessage } from "@/lib/api";
+import { getDeviceLanguageCode, languageDisplayName } from "@/lib/language";
 import { bookHasFullText } from "@/lib/parseBook";
 import { loadBooks } from "@/lib/storage";
 import type { Book } from "@/lib/types";
@@ -34,13 +35,14 @@ export default function BookChatScreen() {
       setBook(found);
       if (!found) return;
       const hasText = bookHasFullText(found);
+      const outLang = languageDisplayName(getDeviceLanguageCode());
       setMessages([
         {
           id: "sys",
           role: "assistant",
           content: hasText
-            ? "I've read this book with you. Ask about themes, characters, arguments, or what to remember."
-            : "No PDF/EPUB is attached yet, so I'll answer from general knowledge of this work. Add the book file for text-grounded answers and Detailed guides.",
+            ? `I've read this book with you. Ask about themes, characters, arguments, or what to remember. If the book is in another language, I'll answer in ${outLang}.`
+            : `No PDF/EPUB is attached yet, so I'll answer from general knowledge of this work in ${outLang}. Add the book file for text-grounded answers and Detailed guides.`,
         },
       ]);
     })();
@@ -56,9 +58,11 @@ export default function BookChatScreen() {
     setBusy(true);
     try {
       const hasText = bookHasFullText(book);
+      const outLang = languageDisplayName(getDeviceLanguageCode());
+      const langNote = `\n\n(Reply in ${outLang}. If the book text is in another language, translate and explain in ${outLang}. Short original quotes may include a ${outLang} translation.)`;
       const context = hasText
-        ? book.chapters.map((c) => `# ${c.title}\n${c.text}`).join("\n\n")
-        : `${book.title} by ${book.author}. ${book.description || ""}\n\n(No manuscript text attached — answer from established knowledge; say when unsure.)`;
+        ? book.chapters.map((c) => `# ${c.title}\n${c.text}`).join("\n\n") + langNote
+        : `${book.title} by ${book.author}. ${book.description || ""}\n\n(No manuscript text attached — answer from established knowledge; say when unsure.)${langNote}`;
       const reply = await reedrChat({
         messages: next
           .filter((m) => m.id !== "sys")

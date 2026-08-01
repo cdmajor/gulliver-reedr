@@ -1,7 +1,14 @@
+import { normalizeLanguageCode } from "./language";
 import type { CatalogHit } from "./types";
 
 function clean(s: string): string {
   return (s || "").trim().replace(/\s+/g, " ");
+}
+
+function languageFromOl(doc: any): string | undefined {
+  const lang = Array.isArray(doc.language) ? doc.language[0] : doc.language;
+  if (!lang) return undefined;
+  return normalizeLanguageCode(String(lang));
 }
 
 function coverFromOl(coverId?: number): string | undefined {
@@ -29,7 +36,7 @@ async function searchOpenLibrary(q: string): Promise<CatalogHit[]> {
     const params = new URLSearchParams({
       q,
       limit: "12",
-      fields: "key,title,author_name,cover_i,isbn,first_publish_year,subject,first_sentence",
+      fields: "key,title,author_name,cover_i,isbn,first_publish_year,subject,first_sentence,language",
     });
     const res = await fetch(`https://openlibrary.org/search.json?${params}`, {
       headers: { Accept: "application/json" },
@@ -53,6 +60,7 @@ async function searchOpenLibrary(q: string): Promise<CatalogHit[]> {
           openLibraryKey: d.key ? String(d.key) : undefined,
           year: typeof d.first_publish_year === "number" ? d.first_publish_year : undefined,
           subjects: Array.isArray(d.subject) ? d.subject.slice(0, 6) : undefined,
+          language: languageFromOl(d),
           source: "openlibrary",
         }),
       );
@@ -89,6 +97,7 @@ async function searchGoogleBooks(q: string): Promise<CatalogHit[]> {
           isbn: isbn13 || isbn10,
           year: info.publishedDate ? Number(String(info.publishedDate).slice(0, 4)) || undefined : undefined,
           subjects: Array.isArray(info.categories) ? info.categories.slice(0, 6) : undefined,
+          language: info.language ? normalizeLanguageCode(String(info.language)) : undefined,
           source: "googlebooks",
         };
       })

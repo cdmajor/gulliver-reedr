@@ -30,6 +30,8 @@ export type Book = {
   openLibraryKey?: string;
   /** full = chapters have manuscript text; none = metadata-only (typical in-copyright) */
   textAvailability: TextAvailability;
+  /** ISO language code from catalog when known (e.g. "fr", "ja") */
+  language?: string;
 };
 
 export type SummaryRecord = {
@@ -51,5 +53,7 @@ export type CatalogHit = {
   openLibraryKey?: string;
   year?: number;
   subjects?: string[];
+  /** ISO 639-1 / BCP-47 when catalog provides it */
+  language?: string;
   source: "openlibrary" | "googlebooks";
 };

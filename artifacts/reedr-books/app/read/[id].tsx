@@ -14,6 +14,7 @@ import { BookCover } from "@/components/BookCover";
 import { GuideText } from "@/components/GuideText";
 import { TierPicker } from "@/components/TierPicker";
 import { summarizeText } from "@/lib/api";
+import { getDeviceLanguageCode, languageDisplayName } from "@/lib/language";
 import { bookHasFullText } from "@/lib/parseBook";
 import { findSummary, loadBooks, saveSummary, summariesForBook, upsertBook } from "@/lib/storage";
 import type { Book, Chapter, SummaryRecord, SummaryTier } from "@/lib/types";
@@ -88,6 +89,8 @@ export default function ReaderScreen() {
         text: chapter.text,
         scope: "chapter",
         tier,
+        sourceLanguage: book.language,
+        outputLanguage: getDeviceLanguageCode(),
       });
       await saveSummary({
         id: `sum_${Date.now()}`,
@@ -174,7 +177,9 @@ export default function ReaderScreen() {
           <Text style={styles.tierHint}>
             {tier === "detailed"
               ? "Detailed uses evidence from this chapter’s text."
-              : "General for the chapter’s big picture."}
+              : "General for the chapter’s big picture."}{" "}
+            Foreign-language text is translated into{" "}
+            {languageDisplayName(getDeviceLanguageCode())}.
           </Text>
           <Pressable style={styles.inlineGuideBtn} onPress={summarizeChapter} disabled={busy}>
             {busy ? (

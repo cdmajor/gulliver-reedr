@@ -1,4 +1,9 @@
 import Constants from "expo-constants";
+import {
+  getDeviceLanguageCode,
+  languageDisplayName,
+  translationGuideInstructions,
+} from "./language";
 import type { SummaryScope, SummaryTier } from "./types";
 
 const DEFAULT_API = "https://gulliversoftwaretech.com/api";
@@ -177,9 +182,18 @@ export async function summarizeText(params: {
   /** When true, General book guides may run without manuscript text. */
   allowKnowledge?: boolean;
   description?: string;
+  /** Book/source language code when known (e.g. "fr"). */
+  sourceLanguage?: string;
+  /** Guide output language; defaults to the device language. */
+  outputLanguage?: string;
 }): Promise<string> {
   const authorLine = params.author ? `\nAuthor: ${params.author}` : "";
   const hasText = params.text.trim().length > 80;
+  const outputLanguage = params.outputLanguage || getDeviceLanguageCode();
+  const langBlock = translationGuideInstructions({
+    outputLanguage,
+    sourceLanguage: params.sourceLanguage,
+  });
 
   if (params.tier === "detailed" && !hasText) {
     throw new Error(
@@ -197,7 +211,7 @@ export async function summarizeText(params: {
       messages: [
         {
           role: "user",
-          content: `${KNOWLEDGE_GENERAL_BOOK}${authorLine}${blurb}\n\nTitle: ${params.title}\n\nNo manuscript text is attached — use established knowledge only.`,
+          content: `${KNOWLEDGE_GENERAL_BOOK}${langBlock}${authorLine}${blurb}\n\nTitle: ${params.title}\n\nNo manuscript text is attached — use established knowledge only. If the original work is foreign-language, still write this General guide in ${languageDisplayName(outputLanguage)}.`,
         },
       ],
       title: params.title,
@@ -218,7 +232,7 @@ export async function summarizeText(params: {
     messages: [
       {
         role: "user",
-        content: `${prompt}${authorLine}\n\nWork with the book text provided in context.`,
+        content: `${prompt}${langBlock}${authorLine}\n\nWork with the book text provided in context. Translate into ${languageDisplayName(outputLanguage)} whenever the source is in another language.`,
       },
     ],
     title: params.title,

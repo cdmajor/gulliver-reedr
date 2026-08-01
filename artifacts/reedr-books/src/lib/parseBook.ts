@@ -57,6 +57,7 @@ export function createBookFromText(params: {
   description?: string;
   isbn?: string;
   openLibraryKey?: string;
+  language?: string;
   textAvailability?: TextAvailability;
 }): Book {
   const now = Date.now();
@@ -78,6 +79,7 @@ export function createBookFromText(params: {
     description: params.description,
     isbn: params.isbn,
     openLibraryKey: params.openLibraryKey,
+    language: params.language,
     textAvailability: params.textAvailability ?? "full",
   };
 }
@@ -97,6 +99,7 @@ export function createBookFromCatalog(hit: CatalogHit): Book {
     description: hit.description,
     isbn: hit.isbn,
     openLibraryKey: hit.openLibraryKey,
+    language: hit.language,
     textAvailability: "none",
   };
 }

@@ -11,6 +11,7 @@ import {
 import { useRouter } from "expo-router";
 import { BookCover } from "@/components/BookCover";
 import { searchCatalog } from "@/lib/catalog";
+import { languageDisplayName } from "@/lib/language";
 import { createBookFromCatalog, attachTextToBook } from "@/lib/parseBook";
 import { fetchPublicDomainText } from "@/lib/publicText";
 import { upsertBook } from "@/lib/storage";
@@ -64,8 +65,9 @@ export default function SearchScreen() {
   return (
     <View style={styles.screen}>
       <Text style={styles.lead}>
-        Search novels, nonfiction, textbooks, and more. General guides work without the file.
-        Detailed guides need a PDF or EPUB (or a free public-domain text we can fetch).
+        Search novels, nonfiction, textbooks, and more — including foreign-language titles.
+        General guides work without the file and are translated into your device language.
+        Detailed guides need a PDF or EPUB (or free public-domain text when available).
       </Text>
 
       <View style={styles.searchRow}>
@@ -117,7 +119,11 @@ export default function SearchScreen() {
                 <Text style={styles.title}>{item.title}</Text>
                 <Text style={styles.author}>{item.author}</Text>
                 <Text style={styles.sub}>
-                  {[item.year, item.source === "openlibrary" ? "Open Library" : "Google Books"]
+                  {[
+                    item.year,
+                    item.language ? languageDisplayName(item.language) : null,
+                    item.source === "openlibrary" ? "Open Library" : "Google Books",
+                  ]
                     .filter(Boolean)
                     .join(" · ")}
                 </Text>
