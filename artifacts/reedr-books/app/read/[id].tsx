@@ -261,8 +261,8 @@ export default function ReaderScreen() {
         <View style={styles.selectHintBox}>
           <Text style={styles.selectHintTitle}>Mobile calculator</Text>
           <Text style={styles.selectHint}>
-            Tap a paragraph (input), press a symbol key (Σ ≡ ∵ 文 ≈ ?), then = to compute. C clears.
-            ◀ ▶ change chapter. No selection = whole chapter.
+            Tap a paragraph, press a labeled key (e.g. Σ Summarize), then = Compute. Clear resets
+            the selection; Prev/Next change chapter. No selection = whole chapter.
           </Text>
         </View>
 

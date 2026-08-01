@@ -5,7 +5,7 @@ import { colors } from "@/theme/colors";
 
 /**
  * Mobile calculator chassis for letter operations.
- * Layout mirrors a handheld calculator: LCD → 3×2 symbol pad → nav + equals.
+ * Symbol + word on every key so novices can read it at a glance.
  */
 export function OperationKeypad({
   selected,
@@ -48,12 +48,15 @@ export function OperationKeypad({
         <Text style={styles.lcdOp} numberOfLines={1}>
           {meta.symbol}  {meta.label}
         </Text>
+        <Text style={styles.lcdHint} numberOfLines={2}>
+          {meta.blurb}
+        </Text>
         <Text style={styles.lcdScope} numberOfLines={1}>
           {selectionLabel}
         </Text>
       </View>
 
-      {/* 3×2 symbol keypad — calculator buttons */}
+      {/* 3×2 pad — symbol + word on each key */}
       <View style={styles.pad}>
         {LETTER_OPS.map((op) => {
           const on = selected === op.id;
@@ -68,12 +71,15 @@ export function OperationKeypad({
               disabled={busy}
             >
               <Text style={[styles.symbol, on && styles.symbolOn]}>{op.symbol}</Text>
+              <Text style={[styles.keyWord, on && styles.keyWordOn]} numberOfLines={1}>
+                {op.label}
+              </Text>
             </Pressable>
           );
         })}
       </View>
 
-      {/* Function row: C · ◀ · ▶ · = */}
+      {/* Function row — symbol + word */}
       <View style={styles.funcRow}>
         <Pressable
           accessibilityRole="button"
@@ -83,6 +89,7 @@ export function OperationKeypad({
           disabled={busy || !onClear}
         >
           <Text style={styles.funcSymbol}>C</Text>
+          <Text style={styles.funcWord}>Clear</Text>
         </Pressable>
         <Pressable
           accessibilityRole="button"
@@ -92,6 +99,7 @@ export function OperationKeypad({
           disabled={!canPrev || busy}
         >
           <Text style={styles.funcSymbol}>◀</Text>
+          <Text style={styles.funcWord}>Prev</Text>
         </Pressable>
         <Pressable
           accessibilityRole="button"
@@ -101,6 +109,7 @@ export function OperationKeypad({
           disabled={!canNext || busy}
         >
           <Text style={styles.funcSymbol}>▶</Text>
+          <Text style={styles.funcWord}>Next</Text>
         </Pressable>
         <Pressable
           accessibilityRole="button"
@@ -112,7 +121,10 @@ export function OperationKeypad({
           {busy ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={styles.equalsSymbol}>=</Text>
+            <>
+              <Text style={styles.equalsSymbol}>=</Text>
+              <Text style={styles.equalsWord}>Compute</Text>
+            </>
           )}
         </Pressable>
       </View>
@@ -151,13 +163,19 @@ const styles = StyleSheet.create({
   },
   lcdOp: {
     color: "#1a2214",
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: "800",
+  },
+  lcdHint: {
+    color: "#3d4a32",
+    fontSize: 11,
+    lineHeight: 14,
+    marginTop: 2,
   },
   lcdScope: {
     color: "#3d4a32",
     fontSize: 11,
-    fontWeight: "600",
+    fontWeight: "700",
     marginTop: 2,
   },
   pad: {
@@ -168,14 +186,16 @@ const styles = StyleSheet.create({
   },
   key: {
     width: "31.5%",
-    aspectRatio: 1.4,
-    maxHeight: 62,
+    minHeight: 64,
+    paddingVertical: 8,
+    paddingHorizontal: 4,
     backgroundColor: "#3a4150",
     borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
     borderBottomWidth: 3,
     borderBottomColor: "#1e2430",
+    gap: 2,
   },
   keyOn: {
     backgroundColor: colors.brand,
@@ -183,12 +203,22 @@ const styles = StyleSheet.create({
   },
   symbol: {
     color: "#f2f4f8",
-    fontSize: 30,
+    fontSize: 24,
     fontWeight: "700",
-    lineHeight: 34,
+    lineHeight: 28,
     textAlign: "center",
   },
   symbolOn: {
+    color: "#fff",
+  },
+  keyWord: {
+    color: "rgba(242,244,248,0.88)",
+    fontSize: 10,
+    fontWeight: "700",
+    textAlign: "center",
+    letterSpacing: -0.1,
+  },
+  keyWordOn: {
     color: "#fff",
   },
   funcRow: {
@@ -198,13 +228,15 @@ const styles = StyleSheet.create({
   },
   funcKey: {
     flex: 1,
-    minHeight: 54,
+    minHeight: 56,
     backgroundColor: "#4a5160",
     borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
     borderBottomWidth: 3,
     borderBottomColor: "#2a303c",
+    paddingVertical: 6,
+    gap: 1,
   },
   clearKey: {
     backgroundColor: "#6b5344",
@@ -212,24 +244,38 @@ const styles = StyleSheet.create({
   },
   equalsKey: {
     flex: 1.4,
-    minHeight: 54,
+    minHeight: 56,
     backgroundColor: colors.brand,
     borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
     borderBottomWidth: 3,
     borderBottomColor: "#4c3fd4",
+    paddingVertical: 6,
+    gap: 1,
   },
   funcSymbol: {
     color: "#f2f4f8",
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: "800",
+    lineHeight: 22,
+  },
+  funcWord: {
+    color: "rgba(242,244,248,0.9)",
+    fontSize: 10,
+    fontWeight: "700",
   },
   equalsSymbol: {
     color: "#fff",
-    fontSize: 30,
+    fontSize: 22,
     fontWeight: "800",
-    lineHeight: 34,
+    lineHeight: 26,
+  },
+  equalsWord: {
+    color: "#fff",
+    fontSize: 10,
+    fontWeight: "800",
+    letterSpacing: 0.2,
   },
   funcDisabled: {
     opacity: 0.38,
