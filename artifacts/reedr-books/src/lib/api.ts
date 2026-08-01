@@ -142,16 +142,78 @@ Be specific. Prefer evidence from the chapter text provided.`,
   },
 };
 
+const KNOWLEDGE_GENERAL_BOOK = `You are Reedr Books. The user has NOT provided the book file. Write a GENERAL reading guide from well-established knowledge of this work (novels, nonfiction, or textbooks).
+Use exactly these markdown headings:
+
+## Overview
+Premise / plot or argument in plain language (short).
+
+## Characters
+Main people or figures in one or two lines each (or key concepts/figures for nonfiction).
+
+## Themes
+2–4 major themes, briefly.
+
+## Context
+One short note on cultural, historical, or academic background.
+
+## Author
+Brief author background relevant to this work.
+
+## Takeaway
+One short paragraph on what to remember.
+
+## Confidence
+One short line: how well-known this work is to you, and that details may differ by edition.
+
+Keep under ~350 words. No fabricated long quotes. If you are unsure the book exists or know little about it, say so clearly instead of inventing plot.`;
+
 export async function summarizeText(params: {
   title: string;
   author?: string;
   text: string;
   scope: SummaryScope;
   tier: SummaryTier;
+  /** When true, General book guides may run without manuscript text. */
+  allowKnowledge?: boolean;
+  description?: string;
 }): Promise<string> {
-  const authorLine = params.author ? `\nAuthor (as listed in the app): ${params.author}` : "";
-  const prompt = PROMPTS[params.scope][params.tier];
+  const authorLine = params.author ? `\nAuthor: ${params.author}` : "";
+  const hasText = params.text.trim().length > 80;
 
+  if (params.tier === "detailed" && !hasText) {
+    throw new Error(
+      "Detailed guides need the book text. Add a PDF or EPUB of this book to unlock Detailed.",
+    );
+  }
+
+  if (params.scope === "chapter" && !hasText) {
+    throw new Error("Chapter guides need the book text. Add a PDF or EPUB first.");
+  }
+
+  if (!hasText && params.scope === "book" && params.tier === "general" && params.allowKnowledge) {
+    const blurb = params.description ? `\nCatalog blurb: ${params.description}` : "";
+    return reedrChat({
+      messages: [
+        {
+          role: "user",
+          content: `${KNOWLEDGE_GENERAL_BOOK}${authorLine}${blurb}\n\nTitle: ${params.title}\n\nNo manuscript text is attached — use established knowledge only.`,
+        },
+      ],
+      title: params.title,
+      url: `reedr-books://knowledge/general/${encodeURIComponent(params.title)}`,
+      text: `${params.title} by ${params.author || "Unknown"}. ${params.description || ""}`.slice(
+        0,
+        4000,
+      ),
+    });
+  }
+
+  if (!hasText) {
+    throw new Error("This guide needs book text. Add a PDF or EPUB of the book.");
+  }
+
+  const prompt = PROMPTS[params.scope][params.tier];
   return reedrChat({
     messages: [
       {
@@ -163,4 +225,22 @@ export async function summarizeText(params: {
     url: `reedr-books://${params.scope}/${params.tier}/${encodeURIComponent(params.title)}`,
     text: params.text,
   });
+}
+
+/** Extract text from a PDF via Reedr API (base64 upload). */
+export async function extractPdfBase64(pdfBase64: string): Promise<string> {
+  const api = getApiUrl();
+  const res = await fetch(`${api}/reedr/extract-pdf`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    body: JSON.stringify({ pdfBase64, maxChars: 500_000 }),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.error || `PDF extract failed (HTTP ${res.status})`);
+  }
+  const data = await res.json();
+  const text = String(data.text || "").trim();
+  if (text.length < 80) throw new Error("Could not extract enough text from that PDF.");
+  return text;
 }

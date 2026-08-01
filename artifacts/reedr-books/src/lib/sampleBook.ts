@@ -25,5 +25,6 @@ export function createSampleBook() {
     author: "Reedr Sample",
     text: SAMPLE,
     format: "sample",
+    textAvailability: "full",
   });
 }

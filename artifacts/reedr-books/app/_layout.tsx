@@ -17,7 +17,8 @@ export default function RootLayout() {
         }}
       >
         <Stack.Screen name="index" options={{ title: "Reedr Books" }} />
-        <Stack.Screen name="import" options={{ title: "Add a book", presentation: "modal" }} />
+        <Stack.Screen name="search" options={{ title: "Search books" }} />
+        <Stack.Screen name="import" options={{ title: "Add PDF or EPUB", presentation: "modal" }} />
         <Stack.Screen name="book/[id]" options={{ title: "Book" }} />
         <Stack.Screen name="read/[id]" options={{ title: "Reading", headerShown: false }} />
         <Stack.Screen name="chat/[id]" options={{ title: "Ask Reedr" }} />

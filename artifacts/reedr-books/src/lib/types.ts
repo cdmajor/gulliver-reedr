@@ -1,7 +1,10 @@
-export type BookFormat = "txt" | "paste" | "sample";
+export type BookFormat = "txt" | "paste" | "sample" | "catalog" | "pdf" | "epub";
 
 export type SummaryScope = "chapter" | "book";
 export type SummaryTier = "general" | "detailed";
+
+/** How Reedr obtained (or failed to obtain) the manuscript text. */
+export type TextAvailability = "full" | "none" | "public_domain";
 
 export type Chapter = {
   id: string;
@@ -22,6 +25,11 @@ export type Book = {
   coverTone: string;
   /** Remote cover art URL (Open Library / Google Books), if found */
   coverUrl?: string;
+  description?: string;
+  isbn?: string;
+  openLibraryKey?: string;
+  /** full = chapters have manuscript text; none = metadata-only (typical in-copyright) */
+  textAvailability: TextAvailability;
 };
 
 export type SummaryRecord = {
@@ -32,4 +40,16 @@ export type SummaryRecord = {
   tier: SummaryTier;
   text: string;
   createdAt: number;
+};
+
+export type CatalogHit = {
+  title: string;
+  author: string;
+  coverUrl?: string;
+  description?: string;
+  isbn?: string;
+  openLibraryKey?: string;
+  year?: number;
+  subjects?: string[];
+  source: "openlibrary" | "googlebooks";
 };

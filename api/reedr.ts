@@ -261,7 +261,10 @@ function resolvePdfParseConstructor(mod: any): ((opts: { data: Buffer }) => any)
  * Avoids `const { PDFParse } = await import(...)` — production bundlers rewrote that
  * into `new PDFParse2(...)` and crashed with "PDFParse2 is not a constructor".
  */
-async function extractTextFromPdfBuffer(buffer: Buffer): Promise<{ text: string; pages: number }> {
+async function extractTextFromPdfBuffer(
+  buffer: Buffer,
+  maxChars = 12_000,
+): Promise<{ text: string; pages: number }> {
   ensureDomMatrixPolyfill();
 
   const mod: any = await import("pdf-parse");
@@ -276,7 +279,7 @@ async function extractTextFromPdfBuffer(buffer: Buffer): Promise<{ text: string;
     const text = String(data?.text || "")
       .replace(/\s+/g, " ")
       .trim()
-      .slice(0, 12000);
+      .slice(0, maxChars);
     return { text, pages: Number(data?.numpages || data?.total || 0) || 0 };
   }
 
@@ -294,7 +297,7 @@ async function extractTextFromPdfBuffer(buffer: Buffer): Promise<{ text: string;
   const text = String(result?.text || fromPages)
     .replace(/\s+/g, " ")
     .trim()
-    .slice(0, 12000);
+    .slice(0, maxChars);
 
   // Destroy parser if the lib exposes it (frees workers / wasm)
   try { await parser.destroy?.(); } catch (_) {}
@@ -304,32 +307,55 @@ async function extractTextFromPdfBuffer(buffer: Buffer): Promise<{ text: string;
 
 async function handleExtractPdf(req: any, res: any): Promise<void> {
   try {
-    const { pdfUrl } = req.body as { pdfUrl: string };
-    if (!pdfUrl || typeof pdfUrl !== "string") {
-      res.status(400).json({ error: "pdfUrl is required" });
+    const { pdfUrl, pdfBase64, maxChars } = req.body as {
+      pdfUrl?: string;
+      pdfBase64?: string;
+      maxChars?: number;
+    };
+    // Browser-extension extracts stay short; Reedr Books uploads may pass a higher cap.
+    const charCap =
+      typeof maxChars === "number" && maxChars > 0
+        ? Math.min(Math.floor(maxChars), 800_000)
+        : typeof pdfBase64 === "string" && pdfBase64.trim()
+          ? 500_000
+          : 12_000;
+
+    let buffer: Buffer | null = null;
+
+    if (typeof pdfBase64 === "string" && pdfBase64.trim()) {
+      const raw = pdfBase64.replace(/^data:application\/pdf;base64,/i, "").trim();
+      // ~18MB base64 ≈ ~13MB PDF — keep mobile uploads bounded
+      if (raw.length > 18_000_000) {
+        res.status(413).json({ error: "PDF is too large. Try a smaller file or EPUB." });
+        return;
+      }
+      buffer = Buffer.from(raw, "base64");
+    } else if (typeof pdfUrl === "string" && pdfUrl.trim()) {
+      const pdfResp = await fetch(pdfUrl, {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (compatible; Reedr-Extension/1.0)",
+          Accept: "application/pdf,*/*",
+        },
+        signal: AbortSignal.timeout(15_000),
+      });
+      if (!pdfResp.ok) {
+        res.status(502).json({ error: `Failed to fetch PDF: HTTP ${pdfResp.status}` });
+        return;
+      }
+
+      const contentType = pdfResp.headers.get("content-type") || "";
+      if (!contentType.includes("pdf") && !pdfUrl.toLowerCase().includes(".pdf")) {
+        res.status(400).json({ error: "URL does not appear to be a PDF" });
+        return;
+      }
+
+      buffer = Buffer.from(await pdfResp.arrayBuffer());
+    } else {
+      res.status(400).json({ error: "pdfUrl or pdfBase64 is required" });
       return;
     }
 
-    const pdfResp = await fetch(pdfUrl, {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (compatible; Reedr-Extension/1.0)",
-        Accept: "application/pdf,*/*",
-      },
-      signal: AbortSignal.timeout(15_000),
-    });
-    if (!pdfResp.ok) {
-      res.status(502).json({ error: `Failed to fetch PDF: HTTP ${pdfResp.status}` });
-      return;
-    }
-
-    const contentType = pdfResp.headers.get("content-type") || "";
-    if (!contentType.includes("pdf") && !pdfUrl.toLowerCase().includes(".pdf")) {
-      res.status(400).json({ error: "URL does not appear to be a PDF" });
-      return;
-    }
-
-    const buffer = Buffer.from(await pdfResp.arrayBuffer());
-    const { text, pages } = await extractTextFromPdfBuffer(buffer);
+    const { text, pages } = await extractTextFromPdfBuffer(buffer, charCap);
     res.json({ text, pages });
   } catch (err: any) {
     res.status(500).json({ error: err.message });

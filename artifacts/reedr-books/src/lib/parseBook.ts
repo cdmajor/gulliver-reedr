@@ -1,4 +1,4 @@
-import type { Book, BookFormat, Chapter } from "./types";
+import type { Book, BookFormat, CatalogHit, Chapter, TextAvailability } from "./types";
 
 const COVER_TONES = ["#6d5ffa", "#2f6f6a", "#8b5a2b", "#3d5a80", "#6b3f69", "#1f4e5f"];
 
@@ -54,6 +54,10 @@ export function createBookFromText(params: {
   text: string;
   format: BookFormat;
   coverUrl?: string;
+  description?: string;
+  isbn?: string;
+  openLibraryKey?: string;
+  textAvailability?: TextAvailability;
 }): Book {
   const now = Date.now();
   const chapters = splitIntoChapters(params.text);
@@ -71,7 +75,60 @@ export function createBookFromText(params: {
     lastChapterId: chapters[0]?.id,
     coverTone: COVER_TONES[Math.floor(Math.random() * COVER_TONES.length)],
     coverUrl: params.coverUrl,
+    description: params.description,
+    isbn: params.isbn,
+    openLibraryKey: params.openLibraryKey,
+    textAvailability: params.textAvailability ?? "full",
   };
+}
+
+export function createBookFromCatalog(hit: CatalogHit): Book {
+  const now = Date.now();
+  return {
+    id: uid("book"),
+    title: hit.title.trim() || "Untitled",
+    author: (hit.author || "Unknown").trim(),
+    format: "catalog",
+    chapters: [],
+    createdAt: now,
+    updatedAt: now,
+    coverTone: COVER_TONES[Math.floor(Math.random() * COVER_TONES.length)],
+    coverUrl: hit.coverUrl,
+    description: hit.description,
+    isbn: hit.isbn,
+    openLibraryKey: hit.openLibraryKey,
+    textAvailability: "none",
+  };
+}
+
+/** Attach manuscript text to an existing catalog (or empty) book. */
+export function attachTextToBook(
+  book: Book,
+  text: string,
+  format: BookFormat,
+  textAvailability: TextAvailability = "full",
+): Book {
+  const chapters = splitIntoChapters(text);
+  if (chapters.length === 0) {
+    throw new Error("No readable text found in that file.");
+  }
+  return {
+    ...book,
+    format,
+    chapters,
+    lastChapterId: chapters[0]?.id,
+    updatedAt: Date.now(),
+    textAvailability,
+  };
+}
+
+export function bookHasFullText(book: Book): boolean {
+  if (book.textAvailability === "none") return false;
+  if (book.textAvailability === "full" || book.textAvailability === "public_domain") {
+    return book.chapters.some((c) => c.text.trim().length > 40);
+  }
+  // Legacy records without textAvailability
+  return book.chapters.some((c) => c.text.trim().length > 40);
 }
 
 export function estimateWordCount(book: Book): number {

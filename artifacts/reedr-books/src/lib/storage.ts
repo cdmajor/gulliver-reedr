@@ -11,12 +11,27 @@ function normalizeSummary(raw: SummaryRecord): SummaryRecord {
   };
 }
 
+function normalizeBook(raw: Book): Book {
+  const hasChapters = Array.isArray(raw.chapters) && raw.chapters.some((c) => c.text?.trim().length > 40);
+  const textAvailability =
+    raw.textAvailability === "public_domain" || raw.textAvailability === "full" || raw.textAvailability === "none"
+      ? raw.textAvailability
+      : hasChapters
+        ? "full"
+        : "none";
+  return {
+    ...raw,
+    chapters: Array.isArray(raw.chapters) ? raw.chapters : [],
+    textAvailability,
+  };
+}
+
 export async function loadBooks(): Promise<Book[]> {
   const raw = await AsyncStorage.getItem(BOOKS_KEY);
   if (!raw) return [];
   try {
     const parsed = JSON.parse(raw) as Book[];
-    return Array.isArray(parsed) ? parsed : [];
+    return Array.isArray(parsed) ? parsed.map(normalizeBook) : [];
   } catch {
     return [];
   }

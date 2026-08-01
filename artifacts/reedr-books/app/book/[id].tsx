@@ -14,7 +14,7 @@ import { GuideText } from "@/components/GuideText";
 import { TierPicker } from "@/components/TierPicker";
 import { summarizeText } from "@/lib/api";
 import { findBookCover } from "@/lib/covers";
-import { estimateWordCount } from "@/lib/parseBook";
+import { bookHasFullText, estimateWordCount } from "@/lib/parseBook";
 import { findSummary, loadBooks, saveSummary, summariesForBook, upsertBook } from "@/lib/storage";
 import type { Book, SummaryRecord, SummaryTier } from "@/lib/types";
 import { colors } from "@/theme/colors";
@@ -55,6 +55,8 @@ export default function BookDetailScreen() {
     }, [refresh]),
   );
 
+  const hasText = book ? bookHasFullText(book) : false;
+
   const bookGuide = useMemo(
     () => findSummary(summaries, { scope: "book", tier }),
     [summaries, tier],
@@ -62,6 +64,22 @@ export default function BookDetailScreen() {
 
   async function runBookGuide() {
     if (!book) return;
+    if (tier === "detailed" && !hasText) {
+      Alert.alert(
+        "Detailed needs the book file",
+        "Add a PDF or EPUB of this book to unlock Detailed guides with text evidence.",
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Add PDF / EPUB",
+            onPress: () =>
+              router.push({ pathname: "/import", params: { bookId: book.id } }),
+          },
+        ],
+      );
+      return;
+    }
+
     setBusy(true);
     try {
       const text = book.chapters.map((c) => `# ${c.title}\n${c.text}`).join("\n\n");
@@ -71,6 +89,8 @@ export default function BookDetailScreen() {
         text,
         scope: "book",
         tier,
+        allowKnowledge: true,
+        description: book.description,
       });
       await saveSummary({
         id: `sum_${Date.now()}`,
@@ -99,7 +119,7 @@ export default function BookDetailScreen() {
   return (
     <FlatList
       style={styles.screen}
-      data={book.chapters}
+      data={hasText ? book.chapters : []}
       keyExtractor={(item) => item.id}
       ListHeaderComponent={
         <View>
@@ -115,15 +135,39 @@ export default function BookDetailScreen() {
               <Text style={styles.title}>{book.title}</Text>
               <Text style={styles.author}>{book.author}</Text>
               <Text style={styles.stats}>
-                {book.chapters.length} chapters · ~{estimateWordCount(book).toLocaleString()} words
+                {hasText
+                  ? `${book.chapters.length} chapters · ~${estimateWordCount(book).toLocaleString()} words`
+                  : book.textAvailability === "public_domain"
+                    ? "Public-domain text"
+                    : "No book file yet"}
               </Text>
             </View>
           </View>
 
+          {!hasText ? (
+            <View style={styles.needsFile}>
+              <Text style={styles.needsTitle}>Detailed needs a PDF or EPUB</Text>
+              <Text style={styles.needsBody}>
+                General guides work without the book. To unlock Detailed guides, chapter reading,
+                and text-grounded chat, add a PDF or EPUB you have rights to use.
+              </Text>
+              <Pressable
+                style={styles.attachBtn}
+                onPress={() =>
+                  router.push({ pathname: "/import", params: { bookId: book.id } })
+                }
+              >
+                <Text style={styles.attachBtnText}>Add PDF or EPUB</Text>
+              </Pressable>
+            </View>
+          ) : null}
+
           <View style={styles.actions}>
-            <Pressable style={styles.primaryBtn} onPress={() => router.push(`/read/${book.id}`)}>
-              <Text style={styles.primaryBtnText}>Read</Text>
-            </Pressable>
+            {hasText ? (
+              <Pressable style={styles.primaryBtn} onPress={() => router.push(`/read/${book.id}`)}>
+                <Text style={styles.primaryBtnText}>Read</Text>
+              </Pressable>
+            ) : null}
             <Pressable style={styles.ghostBtn} onPress={() => router.push(`/chat/${book.id}`)}>
               <Text style={styles.ghostBtnText}>Ask</Text>
             </Pressable>
@@ -132,32 +176,56 @@ export default function BookDetailScreen() {
           <Text style={styles.sectionLabel}>Whole-book guide</Text>
           <TierPicker value={tier} onChange={setTier} />
           <Text style={styles.hint}>
-            General is the big picture. Detailed adds concrete text details and evidence.
+            {tier === "general"
+              ? hasText
+                ? "General is the big picture from this book’s text."
+                : "General uses established knowledge of this work — no file required."
+              : hasText
+                ? "Detailed includes concrete text evidence from your file."
+                : "Detailed is locked until you add a PDF or EPUB of the book."}
           </Text>
 
-          <Pressable style={styles.secondaryBtn} onPress={runBookGuide} disabled={busy}>
+          <Pressable
+            style={[styles.secondaryBtn, tier === "detailed" && !hasText && styles.secondaryDisabled]}
+            onPress={runBookGuide}
+            disabled={busy}
+          >
             {busy ? (
               <ActivityIndicator color="#fff" />
             ) : (
               <Text style={styles.secondaryBtnText}>
-                {bookGuide ? `Refresh ${tier} guide` : `Generate ${tier} guide`}
+                {tier === "detailed" && !hasText
+                  ? "Detailed — needs PDF/EPUB"
+                  : bookGuide
+                    ? `Refresh ${tier} guide`
+                    : `Generate ${tier} guide`}
               </Text>
             )}
           </Pressable>
 
-          {bookGuide ? (
+          {bookGuide && !(tier === "detailed" && !hasText) ? (
             <View style={styles.guideCard}>
               <Text style={styles.guideTier}>
                 {tier === "detailed" ? "Detailed guide" : "General guide"}
+                {!hasText && tier === "general" ? " · from knowledge" : ""}
               </Text>
               <GuideText text={bookGuide.text} />
             </View>
           ) : null}
 
-          <Text style={[styles.sectionLabel, { marginTop: 8 }]}>Chapters</Text>
+          {hasText ? (
+            <Text style={[styles.sectionLabel, { marginTop: 8 }]}>Chapters</Text>
+          ) : null}
         </View>
       }
       contentContainerStyle={styles.list}
+      ListEmptyComponent={
+        !hasText ? (
+          <Text style={styles.emptyChapters}>
+            Chapters appear after you add a PDF or EPUB (or when free public-domain text is found).
+          </Text>
+        ) : null
+      }
       renderItem={({ item }) => {
         const hasChapterGuide = summaries.some(
           (s) => s.scope === "chapter" && s.chapterId === item.id,
@@ -199,6 +267,25 @@ const styles = StyleSheet.create({
   title: { color: colors.text, fontSize: 22, fontWeight: "800" },
   author: { color: colors.muted, fontSize: 14 },
   stats: { color: colors.muted, fontSize: 12 },
+  needsFile: {
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: colors.brand,
+    backgroundColor: "rgba(109,95,250,0.12)",
+    padding: 14,
+    marginBottom: 14,
+    gap: 8,
+  },
+  needsTitle: { color: colors.brandSoft, fontWeight: "800", fontSize: 14 },
+  needsBody: { color: colors.text, fontSize: 13, lineHeight: 19 },
+  attachBtn: {
+    alignSelf: "flex-start",
+    backgroundColor: colors.brand,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  attachBtnText: { color: "#fff", fontWeight: "700" },
   actions: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 16 },
   primaryBtn: {
     backgroundColor: colors.brand,
@@ -217,6 +304,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 14,
   },
+  secondaryDisabled: { opacity: 0.85, borderColor: colors.line },
   secondaryBtnText: { color: colors.brandSoft, fontWeight: "700" },
   ghostBtn: {
     borderWidth: 1,
@@ -251,6 +339,7 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
     marginBottom: 10,
   },
+  emptyChapters: { color: colors.muted, fontSize: 13, lineHeight: 19 },
   chapterRow: {
     padding: 14,
     borderRadius: 12,

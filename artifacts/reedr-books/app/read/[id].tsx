@@ -14,6 +14,7 @@ import { BookCover } from "@/components/BookCover";
 import { GuideText } from "@/components/GuideText";
 import { TierPicker } from "@/components/TierPicker";
 import { summarizeText } from "@/lib/api";
+import { bookHasFullText } from "@/lib/parseBook";
 import { findSummary, loadBooks, saveSummary, summariesForBook, upsertBook } from "@/lib/storage";
 import type { Book, Chapter, SummaryRecord, SummaryTier } from "@/lib/types";
 import { colors } from "@/theme/colors";
@@ -34,6 +35,10 @@ export default function ReaderScreen() {
       const found = books.find((b) => b.id === id) || null;
       setBook(found);
       if (!found) return;
+      if (!bookHasFullText(found)) {
+        setChapter(null);
+        return;
+      }
       const ch =
         found.chapters.find((c) => c.id === chapterId) ||
         found.chapters.find((c) => c.id === found.lastChapterId) ||
@@ -68,6 +73,13 @@ export default function ReaderScreen() {
 
   async function summarizeChapter() {
     if (!book || !chapter) return;
+    if (tier === "detailed" && !bookHasFullText(book)) {
+      Alert.alert(
+        "Detailed needs the book file",
+        "Add a PDF or EPUB to unlock Detailed chapter guides.",
+      );
+      return;
+    }
     setBusy(true);
     try {
       const reply = await summarizeText({
@@ -92,6 +104,27 @@ export default function ReaderScreen() {
     } finally {
       setBusy(false);
     }
+  }
+
+  if (book && !bookHasFullText(book)) {
+    return (
+      <View style={[styles.screen, styles.center, { paddingTop: insets.top + 24 }]}>
+        <Text style={styles.emptyTitle}>Reading needs a PDF or EPUB</Text>
+        <Text style={styles.emptyBody}>
+          This title is in your library for General guides. Add a PDF or EPUB to read chapters and
+          unlock Detailed guides.
+        </Text>
+        <Pressable
+          style={styles.emptyBtn}
+          onPress={() => router.push({ pathname: "/import", params: { bookId: book.id } })}
+        >
+          <Text style={styles.emptyBtnText}>Add PDF or EPUB</Text>
+        </Pressable>
+        <Pressable onPress={() => router.back()} style={{ marginTop: 16 }}>
+          <Text style={styles.topLink}>Back</Text>
+        </Pressable>
+      </View>
+    );
   }
 
   if (!book || !chapter) {
@@ -139,7 +172,9 @@ export default function ReaderScreen() {
           <Text style={styles.summaryLabel}>Chapter guide</Text>
           <TierPicker value={tier} onChange={setTier} tone="paper" />
           <Text style={styles.tierHint}>
-            General for the arc; Detailed for quotes and text evidence.
+            {tier === "detailed"
+              ? "Detailed uses evidence from this chapter’s text."
+              : "General for the chapter’s big picture."}
           </Text>
           <Pressable style={styles.inlineGuideBtn} onPress={summarizeChapter} disabled={busy}>
             {busy ? (
@@ -180,7 +215,28 @@ export default function ReaderScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.paperWarm },
-  center: { alignItems: "center", justifyContent: "center" },
+  center: { alignItems: "center", justifyContent: "center", paddingHorizontal: 28 },
+  emptyTitle: {
+    color: colors.textOnPaper,
+    fontSize: 20,
+    fontWeight: "800",
+    textAlign: "center",
+    marginBottom: 10,
+  },
+  emptyBody: {
+    color: "#4b5563",
+    fontSize: 15,
+    lineHeight: 22,
+    textAlign: "center",
+    marginBottom: 18,
+  },
+  emptyBtn: {
+    backgroundColor: colors.brand,
+    borderRadius: 12,
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+  },
+  emptyBtnText: { color: "#fff", fontWeight: "800" },
   topBar: {
     flexDirection: "row",
     alignItems: "center",

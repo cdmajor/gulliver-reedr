@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import { reedrChat, type ChatMessage } from "@/lib/api";
+import { bookHasFullText } from "@/lib/parseBook";
 import { loadBooks } from "@/lib/storage";
 import type { Book } from "@/lib/types";
 import { colors } from "@/theme/colors";
@@ -21,13 +22,7 @@ type Bubble = ChatMessage & { id: string };
 export default function BookChatScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [book, setBook] = useState<Book | null>(null);
-  const [messages, setMessages] = useState<Bubble[]>([
-    {
-      id: "sys",
-      role: "assistant",
-      content: "I've read this book with you. Ask about themes, characters, arguments, or what to remember.",
-    },
-  ]);
+  const [messages, setMessages] = useState<Bubble[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const listRef = useRef<FlatList>(null);
@@ -35,7 +30,19 @@ export default function BookChatScreen() {
   useEffect(() => {
     (async () => {
       const books = await loadBooks();
-      setBook(books.find((b) => b.id === id) || null);
+      const found = books.find((b) => b.id === id) || null;
+      setBook(found);
+      if (!found) return;
+      const hasText = bookHasFullText(found);
+      setMessages([
+        {
+          id: "sys",
+          role: "assistant",
+          content: hasText
+            ? "I've read this book with you. Ask about themes, characters, arguments, or what to remember."
+            : "No PDF/EPUB is attached yet, so I'll answer from general knowledge of this work. Add the book file for text-grounded answers and Detailed guides.",
+        },
+      ]);
     })();
   }, [id]);
 
@@ -48,7 +55,10 @@ export default function BookChatScreen() {
     setInput("");
     setBusy(true);
     try {
-      const context = book.chapters.map((c) => `# ${c.title}\n${c.text}`).join("\n\n");
+      const hasText = bookHasFullText(book);
+      const context = hasText
+        ? book.chapters.map((c) => `# ${c.title}\n${c.text}`).join("\n\n")
+        : `${book.title} by ${book.author}. ${book.description || ""}\n\n(No manuscript text attached — answer from established knowledge; say when unsure.)`;
       const reply = await reedrChat({
         messages: next
           .filter((m) => m.id !== "sys")

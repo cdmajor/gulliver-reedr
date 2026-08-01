@@ -14,18 +14,21 @@ You do **not** need to publish Reedr Books on Replit for Apple review.
 
 ## What it does
 
-- **Library** — store manuscripts locally on device
-- **Import** — `.txt` files or pasted text (auto chapter split)
-- **Reader** — chapter navigation on a paper reading surface
-- **Whole-book guide** — overview, characters, themes, cultural/academic context, author background
-- **Chapter guide** — chapter summary, characters in focus, themes, references, authorial move
-- **Ask Reedr** — chat grounded in the book text
+- **Search** — find novels, nonfiction, textbooks via Open Library + Google Books (real covers)
+- **General guides** — work without the user’s file (knowledge-based for in-copyright titles)
+- **Detailed guides** — require a **PDF or EPUB** (or free public-domain text when available)
+- **Import** — PDF, EPUB, `.txt`, or paste; attach text to a searched book
+- **Reader** — chapter navigation when text is available
+- **Ask Reedr** — chat grounded in the book text when attached; otherwise general knowledge
 
 ## Stack
 
 - Expo (React Native) + Expo Router
 - Local storage: AsyncStorage
+- Catalog: Open Library + Google Books
+- Free text: Gutendex / Project Gutenberg when available
 - AI: `https://gulliversoftwaretech.com/api/reedr/chat`
+- PDF extract: `POST /reedr/extract-pdf` with `pdfBase64`
 
 ## Run locally
 
@@ -47,14 +50,6 @@ Then press `i` for iOS Simulator (macOS + Xcode), or scan the QR code with Expo 
 ### Important: Apple In-App Purchase
 
 If Reedr Books unlocks paid digital features (Plus summaries, unlimited library, etc.) on iOS, **Apple requires In-App Purchase** (StoreKit). External billing (e.g. Whop) cannot replace IAP for digital goods in the App Store binary. Wire Plus through StoreKit / RevenueCat before review.
-
-## Formats (MVP → next)
-
-| Now | Next |
-|-----|------|
-| `.txt` / pasted manuscripts | EPUB import |
-| Auto chapter split | PDF import (device + API extract) |
-| Local-only library | iCloud sync / account |
 
 ## Brand
 

@@ -11,7 +11,7 @@ import { Link, useFocusEffect, useRouter } from "expo-router";
 import { BookCover } from "@/components/BookCover";
 import { findBookCover } from "@/lib/covers";
 import { createSampleBook } from "@/lib/sampleBook";
-import { estimateWordCount } from "@/lib/parseBook";
+import { bookHasFullText, estimateWordCount } from "@/lib/parseBook";
 import { deleteBook, loadBooks, upsertBook } from "@/lib/storage";
 import type { Book } from "@/lib/types";
 import { colors } from "@/theme/colors";
@@ -51,12 +51,19 @@ export default function LibraryScreen() {
     <View style={styles.screen}>
       <View style={styles.top}>
         <Text style={styles.brand}>Reedr Books</Text>
-        <Text style={styles.tagline}>Read. Summarize. Understand.</Text>
-        <Link href="/import" asChild>
+        <Text style={styles.tagline}>Search. Guide. Read deeper.</Text>
+        <Link href="/search" asChild>
           <Pressable style={styles.primaryBtn}>
-            <Text style={styles.primaryBtnText}>Add a book</Text>
+            <Text style={styles.primaryBtnText}>Search books</Text>
           </Pressable>
         </Link>
+        <View style={styles.secondaryRow}>
+          <Link href="/import" asChild>
+            <Pressable style={styles.secondaryBtn}>
+              <Text style={styles.secondaryBtnText}>Import PDF / EPUB</Text>
+            </Pressable>
+          </Link>
+        </View>
         {!books.length && !loading ? (
           <Pressable onPress={addSample}>
             <Text style={styles.sampleLink}>Or try a short sample</Text>
@@ -73,33 +80,39 @@ export default function LibraryScreen() {
           contentContainerStyle={styles.list}
           ListEmptyComponent={
             <Text style={styles.empty}>
-              Add a text file or paste a manuscript. Reedr can guide the whole book or any chapter.
+              Search any book for a General guide. Add a PDF or EPUB when you want Detailed
+              guides with text evidence.
             </Text>
           }
-          renderItem={({ item }) => (
-            <Pressable
-              style={styles.row}
-              onPress={() => router.push(`/book/${item.id}`)}
-              onLongPress={async () => {
-                const next = await deleteBook(item.id);
-                setBooks(next);
-              }}
-            >
-              <BookCover
-                title={item.title}
-                author={item.author}
-                tone={item.coverTone}
-                coverUrl={item.coverUrl}
-              />
-              <View style={styles.meta}>
-                <Text style={styles.bookTitle}>{item.title}</Text>
-                <Text style={styles.bookAuthor}>{item.author}</Text>
-                <Text style={styles.bookStats}>
-                  {item.chapters.length} chapters · ~{Math.round(estimateWordCount(item) / 1000)}k words
-                </Text>
-              </View>
-            </Pressable>
-          )}
+          renderItem={({ item }) => {
+            const hasText = bookHasFullText(item);
+            return (
+              <Pressable
+                style={styles.row}
+                onPress={() => router.push(`/book/${item.id}`)}
+                onLongPress={async () => {
+                  const next = await deleteBook(item.id);
+                  setBooks(next);
+                }}
+              >
+                <BookCover
+                  title={item.title}
+                  author={item.author}
+                  tone={item.coverTone}
+                  coverUrl={item.coverUrl}
+                />
+                <View style={styles.meta}>
+                  <Text style={styles.bookTitle}>{item.title}</Text>
+                  <Text style={styles.bookAuthor}>{item.author}</Text>
+                  <Text style={styles.bookStats}>
+                    {hasText
+                      ? `${item.chapters.length} chapters · ~${Math.round(estimateWordCount(item) / 1000)}k words`
+                      : "General available · Detailed needs PDF/EPUB"}
+                  </Text>
+                </View>
+              </Pressable>
+            );
+          }}
         />
       )}
     </View>
@@ -130,6 +143,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   primaryBtnText: { color: "#fff", fontWeight: "700", fontSize: 16 },
+  secondaryRow: { flexDirection: "row", gap: 8 },
+  secondaryBtn: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: colors.line,
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: "center",
+  },
+  secondaryBtnText: { color: colors.text, fontWeight: "600", fontSize: 14 },
   sampleLink: {
     color: colors.brandSoft,
     textAlign: "center",
