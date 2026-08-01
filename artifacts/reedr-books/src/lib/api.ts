@@ -1,4 +1,5 @@
 import Constants from "expo-constants";
+import type { SummaryScope, SummaryTier } from "./types";
 
 const DEFAULT_API = "https://gulliversoftwaretech.com/api";
 
@@ -41,58 +42,115 @@ export async function reedrChat(params: {
   return data.reply || data.content || data.message || "";
 }
 
-const BOOK_GUIDE_PROMPT = `You are Reedr Books. Write a clear reading guide for this entire book using exactly these markdown headings (keep each section concise):
+const PROMPTS: Record<SummaryScope, Record<SummaryTier, string>> = {
+  book: {
+    general: `You are Reedr Books. Write a GENERAL reading guide for this entire book — high-level, no deep quotation.
+Use exactly these markdown headings:
 
 ## Overview
-Premise / plot or argument in plain language.
+Premise / plot or argument in plain language (short).
 
 ## Characters
-Key people (or voices/figures in nonfiction): who they are, what they want, how they change. If nonfiction, name central figures instead.
+Main people or figures in one or two lines each.
 
 ## Themes
-Main themes and ideas, with brief evidence from the text.
+2–4 major themes, briefly.
 
-## Cultural & academic context
-Historical setting, literary or scholarly traditions, influences, and useful background a curious reader would want.
+## Context
+One short note on cultural, historical, or academic background.
 
 ## Author
-Who the author is (from the text and well-established public knowledge), why they wrote this kind of work, and what that adds to reading it. If author details are thin in the text, say so briefly and give careful public-context notes.
+Brief author background relevant to this work.
 
 ## Takeaway
-What to remember after finishing.
+One short paragraph on what to remember.
 
-Use short paragraphs or bullets. No fluff. If something is uncertain, say so.`;
+Keep the whole guide under ~350 words. No long quotes. No scene-by-scene detail.`,
 
-const CHAPTER_GUIDE_PROMPT = `You are Reedr Books. Write a chapter guide using exactly these markdown headings:
+    detailed: `You are Reedr Books. Write a DETAILED reading guide for this entire book that includes concrete text details.
+Use exactly these markdown headings:
 
-## Chapter summary
-What happens or is argued in this chapter.
+## Overview
+Full premise / plot or argument, including important turns (still spoiler-aware if helpful; prefer clarity).
 
-## Characters in focus
-Who matters here and what we learn about them (or key figures in nonfiction).
+## Characters
+Key people or figures: role, motivation, arc. Cite specific moments, scenes, or passages from the text (short quotes or close paraphrase with chapter cues when possible).
 
 ## Themes
-Ideas this chapter advances or complicates.
+Major themes with textual evidence — examples, images, arguments, or episodes from the book.
+
+## Cultural & academic context
+Historical setting, literary/scholarly traditions, influences, allusions, and useful background. Tie points back to details in this text when you can.
+
+## Author
+Author background and how it shapes this work; connect to specific stylistic or thematic choices in the text.
+
+## Key passages
+3–6 notable moments or lines (quote or tight paraphrase) and why they matter.
+
+## Takeaway
+What a careful reader should retain.
+
+Be specific to THIS text. If something is uncertain, say so.`,
+  },
+  chapter: {
+    general: `You are Reedr Books. Write a GENERAL chapter guide — big picture only.
+Use exactly these markdown headings:
+
+## Chapter summary
+What happens or is argued, briefly.
+
+## Characters in focus
+Who matters here, in short.
+
+## Themes
+Ideas this chapter touches, briefly.
+
+## Context
+Any useful background in one short note.
+
+## Why it matters
+How this chapter fits the whole book.
+
+Under ~220 words. No long quotes.`,
+
+    detailed: `You are Reedr Books. Write a DETAILED chapter guide with concrete text details.
+Use exactly these markdown headings:
+
+## Chapter summary
+What happens or is argued, including important beats and transitions.
+
+## Characters in focus
+Who matters and what we learn; cite specific lines, actions, or dialogue from this chapter.
+
+## Themes
+Ideas advanced or complicated here, with textual evidence from the chapter.
 
 ## Context & references
-Cultural, historical, or academic references, allusions, or background that help this chapter land.
+Cultural, historical, academic, or intertextual references — explain and link to details in this chapter.
 
 ## Authorial move
-What the author is doing in this chapter (technique, argument step, tone).
+Technique, argument step, or tone; point to examples in the chapter text.
+
+## Notable details
+Short quotes or close paraphrases worth remembering, with why they matter.
 
 ## Why it matters
 How this chapter connects to the whole book.
 
-Keep it scannable. Short paragraphs or bullets.`;
+Be specific. Prefer evidence from the chapter text provided.`,
+  },
+};
 
 export async function summarizeText(params: {
   title: string;
   author?: string;
   text: string;
-  scope: "chapter" | "book";
+  scope: SummaryScope;
+  tier: SummaryTier;
 }): Promise<string> {
   const authorLine = params.author ? `\nAuthor (as listed in the app): ${params.author}` : "";
-  const prompt = params.scope === "book" ? BOOK_GUIDE_PROMPT : CHAPTER_GUIDE_PROMPT;
+  const prompt = PROMPTS[params.scope][params.tier];
 
   return reedrChat({
     messages: [
@@ -102,7 +160,7 @@ export async function summarizeText(params: {
       },
     ],
     title: params.title,
-    url: `reedr-books://${params.scope}/${encodeURIComponent(params.title)}`,
+    url: `reedr-books://${params.scope}/${params.tier}/${encodeURIComponent(params.title)}`,
     text: params.text,
   });
 }

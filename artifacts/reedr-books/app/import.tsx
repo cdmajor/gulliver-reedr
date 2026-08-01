@@ -11,6 +11,7 @@ import {
 import * as DocumentPicker from "expo-document-picker";
 import * as FileSystem from "expo-file-system";
 import { useRouter } from "expo-router";
+import { findBookCover } from "@/lib/covers";
 import { createBookFromText } from "@/lib/parseBook";
 import { upsertBook } from "@/lib/storage";
 import { colors } from "@/theme/colors";
@@ -47,11 +48,15 @@ export default function ImportScreen() {
     }
     setBusy(true);
     try {
+      const bookTitle = title || "Untitled manuscript";
+      const bookAuthor = author || "Unknown";
+      const cover = await findBookCover(bookTitle, bookAuthor);
       const book = createBookFromText({
-        title: title || "Untitled manuscript",
-        author: author || "Unknown",
+        title: bookTitle,
+        author: bookAuthor,
         text,
-        format: text ? "paste" : "txt",
+        format: "paste",
+        coverUrl: cover?.coverUrl,
       });
       await upsertBook(book);
       router.replace(`/book/${book.id}`);

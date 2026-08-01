@@ -1,8 +1,15 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import type { Book, SummaryRecord } from "./types";
+import type { Book, SummaryRecord, SummaryScope, SummaryTier } from "./types";
 
 const BOOKS_KEY = "reedr_books_v1";
 const SUMMARIES_KEY = "reedr_summaries_v1";
+
+function normalizeSummary(raw: SummaryRecord): SummaryRecord {
+  return {
+    ...raw,
+    tier: raw.tier === "detailed" ? "detailed" : "general",
+  };
+}
 
 export async function loadBooks(): Promise<Book[]> {
   const raw = await AsyncStorage.getItem(BOOKS_KEY);
@@ -41,18 +48,40 @@ export async function loadSummaries(): Promise<SummaryRecord[]> {
   if (!raw) return [];
   try {
     const parsed = JSON.parse(raw) as SummaryRecord[];
-    return Array.isArray(parsed) ? parsed : [];
+    return Array.isArray(parsed) ? parsed.map(normalizeSummary) : [];
   } catch {
     return [];
   }
 }
 
+function summaryKey(s: Pick<SummaryRecord, "bookId" | "scope" | "tier" | "chapterId">): string {
+  return `${s.bookId}|${s.scope}|${s.tier}|${s.chapterId || ""}`;
+}
+
 export async function saveSummary(record: SummaryRecord): Promise<void> {
+  const normalized = normalizeSummary(record);
   const all = await loadSummaries();
-  all.unshift(record);
-  await AsyncStorage.setItem(SUMMARIES_KEY, JSON.stringify(all.slice(0, 200)));
+  const key = summaryKey(normalized);
+  const next = [normalized, ...all.filter((s) => summaryKey(s) !== key)];
+  await AsyncStorage.setItem(SUMMARIES_KEY, JSON.stringify(next.slice(0, 200)));
 }
 
 export async function summariesForBook(bookId: string): Promise<SummaryRecord[]> {
   return (await loadSummaries()).filter((s) => s.bookId === bookId);
+}
+
+export function findSummary(
+  summaries: SummaryRecord[],
+  params: {
+    scope: SummaryScope;
+    tier: SummaryTier;
+    chapterId?: string;
+  },
+): SummaryRecord | undefined {
+  return summaries.find(
+    (s) =>
+      s.scope === params.scope &&
+      s.tier === params.tier &&
+      (params.scope === "book" || s.chapterId === params.chapterId),
+  );
 }

@@ -11,10 +11,12 @@ import {
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { BookCover } from "@/components/BookCover";
 import { GuideText } from "@/components/GuideText";
+import { TierPicker } from "@/components/TierPicker";
 import { summarizeText } from "@/lib/api";
+import { findBookCover } from "@/lib/covers";
 import { estimateWordCount } from "@/lib/parseBook";
-import { loadBooks, saveSummary, summariesForBook, upsertBook } from "@/lib/storage";
-import type { Book, SummaryRecord } from "@/lib/types";
+import { findSummary, loadBooks, saveSummary, summariesForBook, upsertBook } from "@/lib/storage";
+import type { Book, SummaryRecord, SummaryTier } from "@/lib/types";
 import { colors } from "@/theme/colors";
 
 export default function BookDetailScreen() {
@@ -22,11 +24,19 @@ export default function BookDetailScreen() {
   const router = useRouter();
   const [book, setBook] = useState<Book | null>(null);
   const [summaries, setSummaries] = useState<SummaryRecord[]>([]);
+  const [tier, setTier] = useState<SummaryTier>("general");
   const [busy, setBusy] = useState(false);
 
   const refresh = useCallback(async () => {
     const books = await loadBooks();
-    const found = books.find((b) => b.id === id) || null;
+    let found = books.find((b) => b.id === id) || null;
+    if (found && !found.coverUrl) {
+      const cover = await findBookCover(found.title, found.author);
+      if (cover?.coverUrl) {
+        found = { ...found, coverUrl: cover.coverUrl, updatedAt: Date.now() };
+        await upsertBook(found);
+      }
+    }
     const sums = id ? await summariesForBook(id) : [];
     setBook(found);
     setSummaries(sums);
@@ -46,8 +56,8 @@ export default function BookDetailScreen() {
   );
 
   const bookGuide = useMemo(
-    () => summaries.find((s) => s.scope === "book") || null,
-    [summaries],
+    () => findSummary(summaries, { scope: "book", tier }),
+    [summaries, tier],
   );
 
   async function runBookGuide() {
@@ -60,11 +70,13 @@ export default function BookDetailScreen() {
         author: book.author,
         text,
         scope: "book",
+        tier,
       });
       await saveSummary({
         id: `sum_${Date.now()}`,
         bookId: book.id,
         scope: "book",
+        tier,
         text: reply,
         createdAt: Date.now(),
       });
@@ -92,7 +104,13 @@ export default function BookDetailScreen() {
       ListHeaderComponent={
         <View>
           <View style={styles.header}>
-            <BookCover title={book.title} author={book.author} tone={book.coverTone} size="lg" />
+            <BookCover
+              title={book.title}
+              author={book.author}
+              tone={book.coverTone}
+              coverUrl={book.coverUrl}
+              size="lg"
+            />
             <View style={styles.headerMeta}>
               <Text style={styles.title}>{book.title}</Text>
               <Text style={styles.author}>{book.author}</Text>
@@ -106,26 +124,32 @@ export default function BookDetailScreen() {
             <Pressable style={styles.primaryBtn} onPress={() => router.push(`/read/${book.id}`)}>
               <Text style={styles.primaryBtnText}>Read</Text>
             </Pressable>
-            <Pressable style={styles.secondaryBtn} onPress={runBookGuide} disabled={busy}>
-              {busy ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={styles.secondaryBtnText}>Whole-book guide</Text>
-              )}
-            </Pressable>
             <Pressable style={styles.ghostBtn} onPress={() => router.push(`/chat/${book.id}`)}>
               <Text style={styles.ghostBtnText}>Ask</Text>
             </Pressable>
           </View>
 
+          <Text style={styles.sectionLabel}>Whole-book guide</Text>
+          <TierPicker value={tier} onChange={setTier} />
           <Text style={styles.hint}>
-            Whole-book guide covers overview, characters, themes, cultural context, and author background.
-            Open any chapter to get a chapter guide.
+            General is the big picture. Detailed adds concrete text details and evidence.
           </Text>
+
+          <Pressable style={styles.secondaryBtn} onPress={runBookGuide} disabled={busy}>
+            {busy ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.secondaryBtnText}>
+                {bookGuide ? `Refresh ${tier} guide` : `Generate ${tier} guide`}
+              </Text>
+            )}
+          </Pressable>
 
           {bookGuide ? (
             <View style={styles.guideCard}>
-              <Text style={styles.sectionLabel}>Whole-book guide</Text>
+              <Text style={styles.guideTier}>
+                {tier === "detailed" ? "Detailed guide" : "General guide"}
+              </Text>
               <GuideText text={bookGuide.text} />
             </View>
           ) : null}
@@ -175,7 +199,7 @@ const styles = StyleSheet.create({
   title: { color: colors.text, fontSize: 22, fontWeight: "800" },
   author: { color: colors.muted, fontSize: 14 },
   stats: { color: colors.muted, fontSize: 12 },
-  actions: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 10 },
+  actions: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 16 },
   primaryBtn: {
     backgroundColor: colors.brand,
     paddingHorizontal: 16,
@@ -190,8 +214,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 12,
     borderRadius: 12,
-    minWidth: 140,
     alignItems: "center",
+    marginBottom: 14,
   },
   secondaryBtnText: { color: colors.brandSoft, fontWeight: "700" },
   ghostBtn: {
@@ -202,7 +226,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   ghostBtnText: { color: colors.text, fontWeight: "600" },
-  hint: { color: colors.muted, fontSize: 13, lineHeight: 19, marginBottom: 16 },
+  hint: { color: colors.muted, fontSize: 13, lineHeight: 19, marginTop: 10, marginBottom: 12 },
   guideCard: {
     padding: 14,
     borderRadius: 14,
@@ -210,6 +234,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.line,
     marginBottom: 18,
+  },
+  guideTier: {
+    color: colors.brandSoft,
+    fontSize: 12,
+    fontWeight: "800",
+    letterSpacing: 0.6,
+    textTransform: "uppercase",
+    marginBottom: 10,
   },
   sectionLabel: {
     color: colors.muted,

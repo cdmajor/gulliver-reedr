@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { Link, useFocusEffect, useRouter } from "expo-router";
 import { BookCover } from "@/components/BookCover";
+import { findBookCover } from "@/lib/covers";
 import { createSampleBook } from "@/lib/sampleBook";
 import { estimateWordCount } from "@/lib/parseBook";
 import { deleteBook, loadBooks, upsertBook } from "@/lib/storage";
@@ -39,6 +40,8 @@ export default function LibraryScreen() {
 
   async function addSample() {
     const book = createSampleBook();
+    const cover = await findBookCover(book.title, book.author);
+    if (cover?.coverUrl) book.coverUrl = cover.coverUrl;
     const next = await upsertBook(book);
     setBooks(next);
     router.push(`/book/${book.id}`);
@@ -82,7 +85,12 @@ export default function LibraryScreen() {
                 setBooks(next);
               }}
             >
-              <BookCover title={item.title} author={item.author} tone={item.coverTone} />
+              <BookCover
+                title={item.title}
+                author={item.author}
+                tone={item.coverTone}
+                coverUrl={item.coverUrl}
+              />
               <View style={styles.meta}>
                 <Text style={styles.bookTitle}>{item.title}</Text>
                 <Text style={styles.bookAuthor}>{item.author}</Text>

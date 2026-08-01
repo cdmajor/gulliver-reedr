@@ -10,10 +10,12 @@ import {
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { BookCover } from "@/components/BookCover";
 import { GuideText } from "@/components/GuideText";
+import { TierPicker } from "@/components/TierPicker";
 import { summarizeText } from "@/lib/api";
-import { loadBooks, saveSummary, summariesForBook, upsertBook } from "@/lib/storage";
-import type { Book, Chapter, SummaryRecord } from "@/lib/types";
+import { findSummary, loadBooks, saveSummary, summariesForBook, upsertBook } from "@/lib/storage";
+import type { Book, Chapter, SummaryRecord, SummaryTier } from "@/lib/types";
 import { colors } from "@/theme/colors";
 
 export default function ReaderScreen() {
@@ -22,7 +24,8 @@ export default function ReaderScreen() {
   const insets = useSafeAreaInsets();
   const [book, setBook] = useState<Book | null>(null);
   const [chapter, setChapter] = useState<Chapter | null>(null);
-  const [summary, setSummary] = useState<string>("");
+  const [summaries, setSummaries] = useState<SummaryRecord[]>([]);
+  const [tier, setTier] = useState<SummaryTier>("general");
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -37,11 +40,8 @@ export default function ReaderScreen() {
         found.chapters[0] ||
         null;
       setChapter(ch);
-      if (ch) {
-        const sums = await summariesForBook(found.id);
-        const existing = sums.find((s) => s.scope === "chapter" && s.chapterId === ch.id);
-        setSummary(existing?.text || "");
-      }
+      const sums = await summariesForBook(found.id);
+      setSummaries(sums);
     })();
   }, [id, chapterId]);
 
@@ -50,13 +50,17 @@ export default function ReaderScreen() {
     return book.chapters.findIndex((c) => c.id === chapter.id);
   }, [book, chapter]);
 
+  const summary = useMemo(() => {
+    if (!chapter) return "";
+    return findSummary(summaries, { scope: "chapter", tier, chapterId: chapter.id })?.text || "";
+  }, [summaries, chapter, tier]);
+
   async function goChapter(nextIndex: number) {
     if (!book || nextIndex < 0 || nextIndex >= book.chapters.length) return;
     const ch = book.chapters[nextIndex];
     setChapter(ch);
     const sums = await summariesForBook(book.id);
-    const existing = sums.find((s: SummaryRecord) => s.scope === "chapter" && s.chapterId === ch.id);
-    setSummary(existing?.text || "");
+    setSummaries(sums);
     const next = { ...book, lastChapterId: ch.id, updatedAt: Date.now() };
     setBook(next);
     await upsertBook(next);
@@ -71,16 +75,18 @@ export default function ReaderScreen() {
         author: book.author,
         text: chapter.text,
         scope: "chapter",
+        tier,
       });
-      setSummary(reply);
       await saveSummary({
         id: `sum_${Date.now()}`,
         bookId: book.id,
         chapterId: chapter.id,
         scope: "chapter",
+        tier,
         text: reply,
         createdAt: Date.now(),
       });
+      setSummaries(await summariesForBook(book.id));
     } catch (err: any) {
       Alert.alert("Chapter guide failed", err.message || "Try again in a moment.");
     } finally {
@@ -111,18 +117,45 @@ export default function ReaderScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.page} showsVerticalScrollIndicator={false}>
-        <Text style={styles.chapterLabel}>
-          Chapter {index + 1} of {book.chapters.length}
-        </Text>
-        <Text style={styles.chapterTitle}>{chapter.title}</Text>
+        <View style={styles.coverRow}>
+          <BookCover
+            title={book.title}
+            author={book.author}
+            tone={book.coverTone}
+            coverUrl={book.coverUrl}
+            size="sm"
+          />
+          <View style={styles.coverMeta}>
+            <Text style={styles.chapterLabel}>
+              Chapter {index + 1} of {book.chapters.length}
+            </Text>
+            <Text style={styles.chapterTitle}>{chapter.title}</Text>
+          </View>
+        </View>
+
         <Text style={styles.body}>{chapter.text}</Text>
 
-        {summary ? (
-          <View style={styles.summaryCard}>
-            <Text style={styles.summaryLabel}>Chapter guide</Text>
-            <GuideText text={summary} tone="paper" />
-          </View>
-        ) : null}
+        <View style={styles.guideBlock}>
+          <Text style={styles.summaryLabel}>Chapter guide</Text>
+          <TierPicker value={tier} onChange={setTier} tone="paper" />
+          <Text style={styles.tierHint}>
+            General for the arc; Detailed for quotes and text evidence.
+          </Text>
+          <Pressable style={styles.inlineGuideBtn} onPress={summarizeChapter} disabled={busy}>
+            {busy ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.inlineGuideText}>
+                {summary ? `Refresh ${tier} guide` : `Generate ${tier} guide`}
+              </Text>
+            )}
+          </Pressable>
+          {summary ? (
+            <View style={styles.summaryCard}>
+              <GuideText text={summary} tone="paper" />
+            </View>
+          ) : null}
+        </View>
       </ScrollView>
 
       <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom, 12) }]}>
@@ -132,15 +165,6 @@ export default function ReaderScreen() {
           onPress={() => goChapter(index - 1)}
         >
           <Text style={styles.navText}>Prev</Text>
-        </Pressable>
-        <Pressable style={styles.summarizeBtn} onPress={summarizeChapter} disabled={busy}>
-          {busy ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.summarizeText}>
-              {summary ? "Refresh guide" : "Chapter guide"}
-            </Text>
-          )}
         </Pressable>
         <Pressable
           style={[styles.navBtn, index >= book.chapters.length - 1 && styles.navDisabled]}
@@ -174,6 +198,8 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   page: { paddingHorizontal: 22, paddingBottom: 40 },
+  coverRow: { flexDirection: "row", gap: 14, marginBottom: 18, alignItems: "center" },
+  coverMeta: { flex: 1 },
   chapterLabel: {
     color: "#6b7280",
     fontSize: 12,
@@ -184,9 +210,8 @@ const styles = StyleSheet.create({
   },
   chapterTitle: {
     color: colors.textOnPaper,
-    fontSize: 26,
+    fontSize: 24,
     fontWeight: "800",
-    marginBottom: 16,
     letterSpacing: -0.3,
   },
   body: {
@@ -194,8 +219,8 @@ const styles = StyleSheet.create({
     fontSize: 18,
     lineHeight: 30,
   },
+  guideBlock: { marginTop: 28, gap: 10 },
   summaryCard: {
-    marginTop: 28,
     padding: 16,
     borderRadius: 14,
     backgroundColor: "#fff",
@@ -208,8 +233,15 @@ const styles = StyleSheet.create({
     fontSize: 12,
     letterSpacing: 0.8,
     textTransform: "uppercase",
-    marginBottom: 10,
   },
+  tierHint: { color: "#6b7280", fontSize: 12, lineHeight: 17 },
+  inlineGuideBtn: {
+    backgroundColor: colors.brand,
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  inlineGuideText: { color: "#fff", fontWeight: "800", fontSize: 13 },
   bottomBar: {
     flexDirection: "row",
     gap: 10,
@@ -230,12 +262,4 @@ const styles = StyleSheet.create({
   },
   navDisabled: { opacity: 0.4 },
   navText: { color: colors.textOnPaper, fontWeight: "700" },
-  summarizeBtn: {
-    flex: 1.6,
-    backgroundColor: colors.brand,
-    borderRadius: 12,
-    paddingVertical: 12,
-    alignItems: "center",
-  },
-  summarizeText: { color: "#fff", fontWeight: "800", fontSize: 13 },
 });

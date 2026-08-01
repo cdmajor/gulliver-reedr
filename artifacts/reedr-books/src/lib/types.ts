@@ -1,5 +1,8 @@
 export type BookFormat = "txt" | "paste" | "sample";
 
+export type SummaryScope = "chapter" | "book";
+export type SummaryTier = "general" | "detailed";
+
 export type Chapter = {
   id: string;
   title: string;
@@ -17,13 +20,16 @@ export type Book = {
   updatedAt: number;
   lastChapterId?: string;
   coverTone: string;
+  /** Remote cover art URL (Open Library / Google Books), if found */
+  coverUrl?: string;
 };
 
 export type SummaryRecord = {
   id: string;
   bookId: string;
   chapterId?: string;
-  scope: "chapter" | "book";
+  scope: SummaryScope;
+  tier: SummaryTier;
   text: string;
   createdAt: number;
 };

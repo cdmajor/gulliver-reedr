@@ -53,6 +53,7 @@ export function createBookFromText(params: {
   author?: string;
   text: string;
   format: BookFormat;
+  coverUrl?: string;
 }): Book {
   const now = Date.now();
   const chapters = splitIntoChapters(params.text);
@@ -69,6 +70,7 @@ export function createBookFromText(params: {
     updatedAt: now,
     lastChapterId: chapters[0]?.id,
     coverTone: COVER_TONES[Math.floor(Math.random() * COVER_TONES.length)],
+    coverUrl: params.coverUrl,
   };
 }
 
