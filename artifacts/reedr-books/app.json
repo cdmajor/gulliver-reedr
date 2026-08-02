@@ -43,11 +43,14 @@
       "typedRoutes": true
     },
     "extra": {
-      "eas": {
-        "projectId": "replace-with-eas-project-id"
+      "reedrApiUrl": "https://gulliversoftwaretech.com/api",
+      "router": {
+        "origin": false
       },
-      "reedrApiUrl": "https://gulliversoftwaretech.com/api"
+      "eas": {
+        "projectId": "b87d580b-4b38-485e-a634-ff0936f78c57"
+      }
     },
-    "owner": "gulliversoftware"
+    "owner": "ulysses-clothing-co"
   }
 }

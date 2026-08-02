@@ -14,6 +14,7 @@
   "dependencies": {
     "@react-native-async-storage/async-storage": "2.1.2",
     "expo": "~52.0.46",
+    "expo-asset": "~11.0.5",
     "expo-constants": "~17.0.8",
     "expo-document-picker": "~13.0.3",
     "expo-file-system": "~18.0.12",
@@ -38,5 +39,8 @@
     "@types/react": "~18.3.12",
     "babel-plugin-module-resolver": "^5.0.2",
     "typescript": "~5.3.3"
+  },
+  "overrides": {
+    "tar": "^7.0.0"
   }
 }
