@@ -1,10 +1,19 @@
-import { Stack } from "expo-router";
+import { Stack, usePathname } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { StyleSheet } from "react-native";
+import { useEffect } from "react";
 import { colors } from "@/theme/colors";
+import { initAnalytics, trackScreen } from "@/lib/analytics";
 
 export default function RootLayout() {
+  const pathname = usePathname();
+  useEffect(() => {
+    void initAnalytics();
+  }, []);
+  useEffect(() => {
+    trackScreen(pathname);
+  }, [pathname]);
   return (
     <GestureHandlerRootView style={styles.root}>
       <StatusBar style="light" />
