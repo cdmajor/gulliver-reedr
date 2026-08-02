@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { Link, useFocusEffect, useRouter } from "expo-router";
 import { BookCover } from "@/components/BookCover";
+import { OnboardingWizard, shouldShowOnboarding } from "@/components/OnboardingWizard";
 import { findBookCover } from "@/lib/covers";
 import { createSampleBook } from "@/lib/sampleBook";
 import { bookHasFullText, estimateWordCount } from "@/lib/parseBook";
@@ -20,6 +21,19 @@ export default function LibraryScreen() {
   const router = useRouter();
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
+  // null = hydration check pending; once the user opens/closes the wizard
+  // manually, the state is no longer null so a stale read can't override it.
+  const [showTutorial, setShowTutorial] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    shouldShowOnboarding().then((show) => {
+      if (alive) setShowTutorial((prev) => (prev === null ? show : prev));
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
@@ -49,8 +63,20 @@ export default function LibraryScreen() {
 
   return (
     <View style={styles.screen}>
+      <OnboardingWizard visible={showTutorial === true} onClose={() => setShowTutorial(false)} />
       <View style={styles.top}>
-        <Text style={styles.brand}>Reedr Books</Text>
+        <View style={styles.brandRow}>
+          <Text style={styles.brand}>Reedr Books</Text>
+          <Pressable
+            style={styles.helpBtn}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="Show tutorial"
+            onPress={() => setShowTutorial(true)}
+          >
+            <Text style={styles.helpBtnText}>?</Text>
+          </Pressable>
+        </View>
         <Text style={styles.tagline}>The calculator for letters.</Text>
         <Link href="/search" asChild>
           <Pressable style={styles.primaryBtn}>
@@ -129,6 +155,21 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.line,
   },
+  brandRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  helpBtn: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    borderWidth: 1,
+    borderColor: colors.line,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  helpBtnText: { color: colors.muted, fontSize: 15, fontWeight: "700" },
   brand: {
     color: colors.text,
     fontSize: 28,

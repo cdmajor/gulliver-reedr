@@ -8,7 +8,7 @@ name = "mobile"
 localPort = 8083
 
 [services.development]
-run = "bash -c 'cd /home/runner/workspace/artifacts/reedr-books && npm install && npx expo start --tunnel --port 8083'"
+run = "bash -c 'cd /home/runner/workspace/artifacts/reedr-books && npm install && NODE_OPTIONS=--max-old-space-size=4096 npx expo start --tunnel --port 8083'"
 
 [services.env]
 EXPO_PUBLIC_REEDR_API_URL = "https://gulliversoftwaretech.com/api"

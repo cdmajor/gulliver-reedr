@@ -12,6 +12,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BookCover } from "@/components/BookCover";
 import { GuideText } from "@/components/GuideText";
+import { ComputeKeyboardCoach, shouldShowKeypadCoach } from "@/components/OnboardingWizard";
 import { OperationKeypad } from "@/components/OperationKeypad";
 import { TierPicker } from "@/components/TierPicker";
 import { VerseText } from "@/components/VerseText";
@@ -51,6 +52,17 @@ export default function ReaderScreen() {
   const [op, setOp] = useState<LetterOp>("summarize");
   const [pick, setPick] = useState<VersePick | null>(null);
   const [results, setResults] = useState<ComputeResult[]>([]);
+  const [showCoach, setShowCoach] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    shouldShowKeypadCoach().then((show) => {
+      if (alive && show) setShowCoach(true);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -355,6 +367,7 @@ export default function ReaderScreen() {
         </View>
       </ScrollView>
 
+      <ComputeKeyboardCoach visible={showCoach} onClose={() => setShowCoach(false)} />
       <OperationKeypad
         selected={op}
         onSelect={setOp}
